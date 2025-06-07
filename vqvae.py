@@ -191,7 +191,11 @@ class VQVAE(nn.Module):
 
     def loopTrain(self, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader, device='cuda'):
         self.to(device)
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
+    # Otimizador AdamW
+        optimizer = torch.optim.AdamW(self.parameters(), lr=3e-4, weight_decay=1e-4)
+
+        # Agendador de taxa de aprendizado
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
 
         for epoch in range(max_epochs):
             self.train()
@@ -216,6 +220,8 @@ class VQVAE(nn.Module):
                 recon_loss_epoch += reconstruction_loss.item()
               #  vq_loss_epoch += vq_loss.item()
                 loss_jesus_epoch += loss_jesus.item()
+            scheduler.step()  # Atualiza o lr com o scheduler
+            current_lr = scheduler.get_last_lr()[0]
             if epoch%1==0:
                 print(f"[Epoch {epoch+1}/{max_epochs}] "
                     f"Total Loss: {total_loss_epoch:.4f}, "
