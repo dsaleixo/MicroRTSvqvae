@@ -138,8 +138,8 @@ class VQVAE(nn.Module):
         z = self.pre_vq_conv(z) # (B, embedding_dim, D/4, H/4, W/4)
 
         # Apply VQ layer
-        quantized, vq_loss, encodings = self.vq(z)
-        #quantized, vq_loss, encodings = z,None,None
+        #quantized, vq_loss, encodings = self.vq(z)
+        quantized, vq_loss, encodings = z,None,None
         # Decode the quantized latent features
         reconstructions = self.decoder(quantized)
 
@@ -207,14 +207,14 @@ class VQVAE(nn.Module):
                 reconstructions, vq_loss, _ = self(x)
                 reconstruction_loss = F.mse_loss(reconstructions, x)
                 loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
-                total_loss = loss_jesus+reconstruction_loss*0.1+ vq_loss
+                total_loss = loss_jesus+reconstruction_loss*0.1+# vq_loss
                 total_loss.backward()
                 #torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
                 optimizer.step()
 
                 total_loss_epoch += total_loss.item()
                 recon_loss_epoch += reconstruction_loss.item()
-                vq_loss_epoch += vq_loss.item()
+              #  vq_loss_epoch += vq_loss.item()
                 loss_jesus_epoch += loss_jesus.item()
             if epoch%1==0:
                 print(f"[Epoch {epoch+1}/{max_epochs}] "
