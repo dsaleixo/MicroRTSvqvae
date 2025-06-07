@@ -112,44 +112,44 @@ class Decoder(nn.Module):
 
 # --- 4. Assemble the VQ-VAE Model ---
 class VQVAE(nn.Module):
-  def __init__(self, num_hiddens,
+    def __init__(self, num_hiddens,
                 num_embeddings, embedding_dim, commitment_cost,device):
-      super().__init__()
+        super().__init__()
 
-      self.encoder = Encoder(3, num_hiddens,)
-      self.pre_vq_conv = nn.Conv3d(num_hiddens, embedding_dim, kernel_size=1, stride=1) # Maps encoder output to embedding_dim
-      self.vq = VectorQuantizer(num_embeddings, embedding_dim, commitment_cost)
-      self.decoder = Decoder(embedding_dim, num_hiddens)
+        self.encoder = Encoder(3, num_hiddens,)
+        self.pre_vq_conv = nn.Conv3d(num_hiddens, embedding_dim, kernel_size=1, stride=1) # Maps encoder output to embedding_dim
+        self.vq = VectorQuantizer(num_embeddings, embedding_dim, commitment_cost)
+        self.decoder = Decoder(embedding_dim, num_hiddens)
 
-      self.palette = torch.tensor([
-            [255,255,255],
-            [200,200,200],
-            [255,100,10],
-            [255,255,0],
-            [0, 255, 255],
-            [0,0,0],
-            [127,127,127],
-        ], dtype=torch.float32).to(device)
-      self.palette/=255
+        self.palette = torch.tensor([
+                [255,255,255],
+                [200,200,200],
+                [255,100,10],
+                [255,255,0],
+                [0, 255, 255],
+                [0,0,0],
+                [127,127,127],
+            ], dtype=torch.float32).to(device)
+        self.palette/=255
 
-  def forward(self, x):
-      # x is the input video (B, C, D, H, W) e.g., (1, 3, 32, 128, 128)
-      z = self.encoder(x) # (B, num_hiddens, D/4, H/4, W/4)
-      z = self.pre_vq_conv(z) # (B, embedding_dim, D/4, H/4, W/4)
+    def forward(self, x):
+        # x is the input video (B, C, D, H, W) e.g., (1, 3, 32, 128, 128)
+        z = self.encoder(x) # (B, num_hiddens, D/4, H/4, W/4)
+        z = self.pre_vq_conv(z) # (B, embedding_dim, D/4, H/4, W/4)
 
-      # Apply VQ layer
-      #quantized, vq_loss, encodings = self.vq(z)
+        # Apply VQ layer
+        #quantized, vq_loss, encodings = self.vq(z)
 
-      # Decode the quantized latent features
-      reconstructions = self.decoder(z)
+        # Decode the quantized latent features
+        reconstructions = self.decoder(z)
 
-      return reconstructions#, vq_loss, encodings # encodings are the discrete indices (for prior training)
+        return reconstructions#, vq_loss, encodings # encodings are the discrete indices (for prior training)
 
-  def configure_optimizers(self):
+    def configure_optimizers(self):
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
 
-  def closest_palette_loss(self,pred_rgb, target_rgb, palette):
+    def closest_palette_loss(self,pred_rgb, target_rgb, palette):
         """
         pred_rgb: (B, 3, T, H, W) — saída contínua da rede, valores em [0, 1]
         target_rgb: (B, 3, T, H, W) — imagem original, onde cada pixel é uma das 7 cores
@@ -187,41 +187,45 @@ class VQVAE(nn.Module):
 
         return loss
 
-  def loopTrain(self, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader, device='cuda'):
-    self.to(device)
-    optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
-    for epoch in range(max_epochs):
-        self.train()
-        total_loss_epoch = 0.0
-        recon_loss_epoch = 0.0
-        vq_loss_epoch = 0.0
-        loss_jesus_epoch = 0.0
-        for batch in train_loader:
-            x = batch.to(device)
 
-            optimizer.zero_grad()
-            #reconstructions, vq_loss, _ = self(x)
-            reconstructions= self(x)
-            reconstruction_loss = F.mse_loss(reconstructions, x)
-            loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
-            total_loss = loss_jesus+reconstruction_loss*0.1 
-            total_loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
-            optimizer.step()
+    def loopTrain(self, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader, device='cuda'):
+        self.to(device)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
-            total_loss_epoch += total_loss.item()
-            recon_loss_epoch += reconstruction_loss.item()
-            #vq_loss_epoch += vq_loss.item()
-            loss_jesus_epoch += loss_jesus.item()
-        if epoch%1==0:
-          print(f"[Epoch {epoch+1}/{max_epochs}] "
-              f"Total Loss: {total_loss_epoch:.4f}, "
-              f"Recon Loss: {recon_loss_epoch:.4f}, "
-              f"Jesus Loss: {loss_jesus_epoch:.4f}, "
-              #f"VQ Loss: {vq_loss_epoch:.4f}"
-              )
-          loss_jesus_epoch
-          
+        for epoch in range(max_epochs):
+            self.train()
+            total_loss_epoch = 0.0
+            recon_loss_epoch = 0.0
+            vq_loss_epoch = 0.0
+            loss_jesus_epoch = 0.0
+            for batch in train_loader:
+                x = batch.to(device)
 
-    print("Treinamento finalizado.")
+                optimizer.zero_grad()
+                #reconstructions, vq_loss, _ = self(x)
+                reconstructions= self(x)
+                reconstruction_loss = F.mse_loss(reconstructions, x)
+                loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
+                total_loss = loss_jesus+reconstruction_loss*0.1 
+                total_loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
+                optimizer.step()
+
+                total_loss_epoch += total_loss.item()
+                recon_loss_epoch += reconstruction_loss.item()
+                #vq_loss_epoch += vq_loss.item()
+                loss_jesus_epoch += loss_jesus.item()
+            if epoch%1==0:
+                print(f"[Epoch {epoch+1}/{max_epochs}] "
+                    f"Total Loss: {total_loss_epoch:.4f}, "
+                    f"Recon Loss: {recon_loss_epoch:.4f}, "
+                    f"Jesus Loss: {loss_jesus_epoch:.4f}, "
+                    #f"VQ Loss: {vq_loss_epoch:.4f}"
+                    )
+                loss_jesus_epoch
+                if epoch%10==0:
+                    print(torch.cuda.memory_summary(device=None, abbreviated=False))
+            
+
+        print("Treinamento finalizado.")
