@@ -140,7 +140,7 @@ class VQVAE(nn.Module):
         # Apply VQ layer
         print("funcionou")
         quantized, vq_loss, encodings = self.vq(z) if epoch >10 else z,None,None
-        print("funciffonou")
+        print("funciffonou",quantized.shape)
         # Decode the quantized latent features
         reconstructions = self.decoder(quantized)
 
