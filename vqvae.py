@@ -191,7 +191,7 @@ class VQVAE(nn.Module):
 
     def loopTrain(self, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader, device='cuda'):
         self.to(device)
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-1)
 
         for epoch in range(max_epochs):
             self.train()
