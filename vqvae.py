@@ -139,7 +139,7 @@ class VQVAE(nn.Module):
 
         # Apply VQ layer
         quantized, vq_loss, encodings = z,None,None
-        if epoch >10 : 
+        if epoch >100 : 
             quantized, vq_loss, encodings = self.vq(z) 
         # Decode the quantized latent features
         reconstructions = self.decoder(quantized)
@@ -213,7 +213,7 @@ class VQVAE(nn.Module):
                 reconstruction_loss = F.mse_loss(reconstructions, x)
                 loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
                 total_loss = loss_jesus+reconstruction_loss*0.1#+# vq_loss
-                if epoch>10:
+                if epoch>100:
                     vq_loss_epoch += vq_loss.item()
                     total_loss+=vq_loss
                 total_loss.backward()
