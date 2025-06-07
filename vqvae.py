@@ -132,14 +132,14 @@ class VQVAE(nn.Module):
             ], dtype=torch.float32).to(device)
         self.palette/=255
 
-    def forward(self, x):
+    def forward(self, x,epoch):
         # x is the input video (B, C, D, H, W) e.g., (1, 3, 32, 128, 128)
         z = self.encoder(x) # (B, num_hiddens, D/4, H/4, W/4)
         z = self.pre_vq_conv(z) # (B, embedding_dim, D/4, H/4, W/4)
 
         # Apply VQ layer
-        #quantized, vq_loss, encodings = self.vq(z)
-        quantized, vq_loss, encodings = z,None,None
+        quantized, vq_loss, encodings = self.vq(z) if epoch >100 else z,None,None
+       
         # Decode the quantized latent features
         reconstructions = self.decoder(quantized)
 
@@ -208,17 +208,20 @@ class VQVAE(nn.Module):
 
                 optimizer.zero_grad()
                 #reconstructions, vq_loss, _ = self(x)
-                reconstructions, vq_loss, _ = self(x)
+                reconstructions, vq_loss, _ = self(x,epoch)
                 reconstruction_loss = F.mse_loss(reconstructions, x)
                 loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
                 total_loss = loss_jesus+reconstruction_loss*0.1#+# vq_loss
+                if epoch>100:
+                    vq_loss_epoch += vq_loss.item()
+                    total_loss+=vq_loss
                 total_loss.backward()
                 #torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
                 optimizer.step()
 
                 total_loss_epoch += total_loss.item()
                 recon_loss_epoch += reconstruction_loss.item()
-              #  vq_loss_epoch += vq_loss.item()
+                
                 loss_jesus_epoch += loss_jesus.item()
             scheduler.step()  # Atualiza o lr com o scheduler
             current_lr = scheduler.get_last_lr()[0]
