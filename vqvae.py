@@ -214,7 +214,7 @@ class VQVAE(nn.Module):
 
                 total_loss_epoch += total_loss.item()
                 recon_loss_epoch += reconstruction_loss.item()
-                vq_loss_epoch += vq_loss.item()
+               # vq_loss_epoch += vq_loss.item()
                 loss_jesus_epoch += loss_jesus.item()
             if epoch%1==0:
                 print(f"[Epoch {epoch+1}/{max_epochs}] "
@@ -224,8 +224,8 @@ class VQVAE(nn.Module):
                    # f"VQ Loss: {vq_loss_epoch:.4f}"
                     )
                 loss_jesus_epoch
-                if epoch%10==0:
-                    print(torch.cuda.memory_summary(device=None, abbreviated=False))
+                #if epoch%10==0:
+                #    print(torch.cuda.memory_summary(device=None, abbreviated=False))
             
 
         print("Treinamento finalizado.")
