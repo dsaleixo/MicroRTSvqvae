@@ -143,7 +143,7 @@ class VQVAE(nn.Module):
         # Decode the quantized latent features
         reconstructions = self.decoder(quantized)
 
-        return reconstructions#, vq_loss, encodings # encodings are the discrete indices (for prior training)
+        return reconstructions, vq_loss, encodings # encodings are the discrete indices (for prior training)
 
     def configure_optimizers(self):
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
