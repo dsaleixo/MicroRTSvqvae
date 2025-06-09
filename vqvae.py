@@ -221,7 +221,17 @@ class VQVAE(nn.Module):
         # Agendador de taxa de aprendizado
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
         bestTrain=100000000000000
-        bestVal = 100000000000000
+
+
+
+        totalLossVal, reconLossVal,jesusLossVal,vqLossVal =self.validation(val_loader)
+        print(f"Val 0 "
+                    f"Total Loss: {totalLossVal:.4f}, "
+                    f"Recon Loss: {reconLossVal:.4f}, "
+                    f"Jesus Loss: {jesusLossVal:.4f}, "
+                    f"VQ Loss: {vqLossVal:.4f}"
+                    )
+        bestVal = jesusLossVal
         for epoch in range(max_epochs):
             self.train()
             total_loss_epoch = 0.0
