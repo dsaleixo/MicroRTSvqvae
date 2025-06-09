@@ -250,7 +250,7 @@ class VQVAE(nn.Module):
                 loss_jesus_epoch += loss_jesus.item()
             scheduler.step()  # Atualiza o lr com o scheduler
             current_lr = scheduler.get_last_lr()[0]
-            totalLossVal, reconLossVal,jesusLossVal,vqLossVal =self.validation()
+            totalLossVal, reconLossVal,jesusLossVal,vqLossVal =self.validation(val_loader)
             if bestTrain>loss_jesus_epoch:
                 bestTrain=loss_jesus_epoch
                 torch.save(self.state_dict(), "BestTrainModel.pth")
