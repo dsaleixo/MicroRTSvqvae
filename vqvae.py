@@ -188,7 +188,30 @@ class VQVAE(nn.Module):
 
         return loss
 
+    def loopTrain(self, val_loader: DataLoader): 
+        self.eval()
+        total_loss_epoch = 0.0
+        recon_loss_epoch = 0.0
+        vq_loss_epoch = 0.0
+        loss_jesus_epoch = 0.0
+        for batch in val_loader:
+            x = batch
 
+           
+            #reconstructions, vq_loss, _ = self(x)
+            reconstructions, vq_loss, _ = self(x,112)
+            reconstruction_loss = F.mse_loss(reconstructions, x)
+            loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
+            total_loss = loss_jesus+reconstruction_loss#+# vq_loss
+            vq_loss_epoch += vq_loss.item()
+            total_loss+=vq_loss
+
+
+            total_loss_epoch += total_loss.item()
+            recon_loss_epoch += reconstruction_loss.item()
+            
+            loss_jesus_epoch += loss_jesus.item()
+        return total_loss_epoch, recon_loss_epoch,loss_jesus_epoch,vq_loss_epoch 
 
     def loopTrain(self, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader, device='cuda'):
         self.to(device)
@@ -197,7 +220,8 @@ class VQVAE(nn.Module):
 
         # Agendador de taxa de aprendizado
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
-
+        bestTrain=100000000000000
+        bestVal = 100000000000000
         for epoch in range(max_epochs):
             self.train()
             total_loss_epoch = 0.0
@@ -205,7 +229,7 @@ class VQVAE(nn.Module):
             vq_loss_epoch = 0.0
             loss_jesus_epoch = 0.0
             for batch in train_loader:
-                x = batch.to(device)
+                x = batch
 
                 optimizer.zero_grad()
                 #reconstructions, vq_loss, _ = self(x)
@@ -226,16 +250,30 @@ class VQVAE(nn.Module):
                 loss_jesus_epoch += loss_jesus.item()
             scheduler.step()  # Atualiza o lr com o scheduler
             current_lr = scheduler.get_last_lr()[0]
+            totalLossVal, reconLossVal,jesusLossVal,vqLossVal =self.validation()
+            if bestTrain>loss_jesus_epoch:
+                bestTrain=loss_jesus_epoch
+                torch.save(self.state_dict(), "BestTrainModel.pth")
+
+            if bestVal >jesusLossVal:
+                jesusLossVal=bestVal
+                torch.save(self.state_dict(), "BestTrainModel.pth")
+
+            
             if epoch%1==0:
-                print(f"[Epoch {epoch+1}/{max_epochs}] "
+                print(f"Train [Epoch {epoch+1}/{max_epochs}] "
                     f"Total Loss: {total_loss_epoch:.4f}, "
                     f"Recon Loss: {recon_loss_epoch:.4f}, "
                     f"Jesus Loss: {loss_jesus_epoch:.4f}, "
                     f"VQ Loss: {vq_loss_epoch:.4f}"
                     )
-                loss_jesus_epoch
-                #if epoch%10==0:
-                #    print(torch.cuda.memory_summary(device=None, abbreviated=False))
+                print(f"Val [Epoch {epoch+1}/{max_epochs}] "
+                    f"Total Loss: {totalLossVal:.4f}, "
+                    f"Recon Loss: {reconLossVal:.4f}, "
+                    f"Jesus Loss: {jesusLossVal:.4f}, "
+                    f"VQ Loss: {vqLossVal:.4f}"
+                    )
+                
             
 
         print("Treinamento finalizado.")
