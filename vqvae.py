@@ -256,7 +256,7 @@ class VQVAE(nn.Module):
                 torch.save(self.state_dict(), "BestTrainModel.pth")
 
             if bestVal >jesusLossVal:
-                jesusLossVal=bestVal
+                bestVal=jesusLossVal
                 torch.save(self.state_dict(), "BestTrainModel.pth")
 
             
