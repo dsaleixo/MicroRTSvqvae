@@ -11,7 +11,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     datas = ReadDatas.readDatas(64,device)
-    datas = datas.to(device)
+    datas = datas
     total_size = len(datas) 
     train_size = int(0.8 * total_size)  # 80 amostras para treino
     test_size = total_size - train_size  # 20 amostras para teste
