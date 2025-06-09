@@ -273,6 +273,7 @@ class VQVAE(nn.Module):
                     f"Jesus Loss: {jesusLossVal:.4f}, "
                     f"VQ Loss: {vqLossVal:.4f}"
                     )
+                print()
                 
             
 
