@@ -188,7 +188,7 @@ class VQVAE(nn.Module):
 
         return loss
 
-    def loopTrain(self, val_loader: DataLoader): 
+    def validation(self, val_loader: DataLoader): 
         self.eval()
         total_loss_epoch = 0.0
         recon_loss_epoch = 0.0
