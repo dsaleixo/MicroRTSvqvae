@@ -8,7 +8,8 @@
 #SBATCH --mem=32G
 #SBATCH --cpus-per-task=1
 
-source ~/envs/VQVAE/bin/activate
+source $HOME/VQVAE/bin/activate
+
 
 
 python train.py
