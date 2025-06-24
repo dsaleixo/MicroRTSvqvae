@@ -25,11 +25,13 @@ class ReadDatas():
         folder_path = Path('./datas3/')
         arquivos =  [f.name for f in folder_path.iterdir() if f.is_file()]
         print(len(arquivos))
+        cont=0
         for arq in arquivos:
+                        
                         print(arq)
                         loaded_data = np.load('./datas3/'+arq)
                         shape = loaded_data.shape
-                        print(shape,len(dados))
+                        #print(shape,len(dados))
                         aux = [ loaded_data]
                         for _ in range(size-shape[0]):
                             aux.append( np.expand_dims(loaded_data[-1].copy(), axis=0))
@@ -40,7 +42,7 @@ class ReadDatas():
                         dados.append(loaded_data2)
         total_size = len(dados)  # Suponha que temos 100 amostras
         for i in range(total_size):
-            dados[i] = torch.tensor(dados[i],dtype=torch.float).permute(1, 0, 2, 3)
+            dados[i] = torch.tensor(dados[i],dtype=torch.float16).permute(1, 0, 2, 3)
         return dados
 
 if __name__ == "__main__":
