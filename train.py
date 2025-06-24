@@ -18,8 +18,8 @@ if __name__ == "__main__":
     test_size = total_size - train_size  # 20 amostras para teste
     train_set, val_set = random_split(datas, [train_size, test_size])
 
-    train_loader = DataLoader(train_set, batch_size=64)
-    val_loader = DataLoader(val_set, batch_size=64, )
+    train_loader = DataLoader(train_set, batch_size=32)
+    val_loader = DataLoader(val_set, batch_size=32, )
     
 
     # Model Parameters
@@ -35,4 +35,4 @@ if __name__ == "__main__":
     n=100
      
 
-    #model.loopTrain(max_epochs=30000,train_loader=train_loader,val_loader=val_loader)
+    model.loopTrain(max_epochs=30000,train_loader=train_loader,val_loader=val_loader)

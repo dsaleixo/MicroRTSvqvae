@@ -234,7 +234,30 @@ class VQVAE(nn.Module):
 
 
 
+    def baseline(self, val_loader: DataLoader, device='cuda'): 
+        self.eval()
+        total_loss_epoch = 0.0
+        recon_loss_epoch = 0.0
+        vq_loss_epoch = 0.0
+        loss_jesus_epoch = 0.0
+        for batch in val_loader:
+            x = batch.to(device,non_blocking=True)
 
+           
+            #reconstructions, vq_loss, _ = self(x)
+            reconstructions = torch.zeros_like(x)
+            reconstruction_loss = F.mse_loss(reconstructions, x)
+            loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
+            total_loss = loss_jesus+reconstruction_loss#+# vq_loss
+          
+          
+
+
+            total_loss_epoch += total_loss.item()
+            recon_loss_epoch += reconstruction_loss.item()
+            
+            loss_jesus_epoch += loss_jesus.item()
+        return total_loss_epoch, recon_loss_epoch,loss_jesus_epoch,vq_loss_epoch 
 
 
 
@@ -261,7 +284,7 @@ class VQVAE(nn.Module):
             recon_loss_epoch += reconstruction_loss.item()
             
             loss_jesus_epoch += loss_jesus.item()
-        return total_loss_epoch, recon_loss_epoch,loss_jesus_epoch,vq_loss_epoch 
+        return total_loss_epoch, recon_loss_epoch,loss_jesus_epoch 
 
     def loopTrain(self, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader, device='cuda'):
         self.to(device)
@@ -272,8 +295,14 @@ class VQVAE(nn.Module):
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
         bestTrain=100000000000000
 
-
-
+        totalLossVal, reconLossVal,jesusLossVal =self.baseline(val_loader)
+        print(f"Baseline 0 "
+                    f"Total Loss: {totalLossVal:.4f}, "
+                    f"Recon Loss: {reconLossVal:.4f}, "
+                    f"Jesus Loss: {jesusLossVal:.4f}, "
+                
+                    )
+        print()
         totalLossVal, reconLossVal,jesusLossVal,vqLossVal =self.validation(val_loader)
         print(f"Val 0 "
                     f"Total Loss: {totalLossVal:.4f}, "
