@@ -74,7 +74,7 @@ class VectorQuantizer(nn.Module):
 class Encoder(nn.Module):
     def __init__(self, in_channels, num_hiddens,):
         super().__init__()
-
+        self.prelu = nn.PReLU()
         # Initial convolution that reduces spatial/temporal dimensions
         self.conv_1 = nn.Conv3d(in_channels, num_hiddens // 2, kernel_size=(4,4,4), stride=(2,2,2), padding=1)
         self.conv_2 = nn.Conv3d(num_hiddens // 2, num_hiddens, kernel_size=(4,4,4), stride=(2,2,2), padding=1)
@@ -85,16 +85,16 @@ class Encoder(nn.Module):
         # Typically, you'd have ResidualStack(num_hiddens, num_residual_layers, num_residual_hiddens)
 
     def forward(self, inputs):
-        x = nn.PReLU(self.conv_1(inputs)) # (B, C/2, D/2, H/2, W/2)
-        x = nn.PReLU(self.conv_2(x))     # (B, C, D/4, H/4, W/4)
-        x = nn.PReLU(self.conv_3(x) )            # (B, C, D/4, H/4, W/4) - Output feature map
+        x = self.prelu(self.conv_1(inputs)) # (B, C/2, D/2, H/2, W/2)
+        x = self.prelu(self.conv_2(x))     # (B, C, D/4, H/4, W/4)
+        x = self.prelu(self.conv_3(x) )            # (B, C, D/4, H/4, W/4) - Output feature map
         return x
 
 # --- 3. Define the Decoder (3D CNN with Transposed Convolutions) ---
 class Decoder(nn.Module):
     def __init__(self, in_channels, num_hiddens):
         super().__init__()
-
+        self.prelu = nn.PReLU()
         # Initial convolution for processing the latent features
         self.conv_1 = nn.Conv3d(in_channels, num_hiddens, kernel_size=(3,3,3), stride=(1,1,1), padding=1)
 
@@ -105,8 +105,8 @@ class Decoder(nn.Module):
                                                 kernel_size=(4,4,4), stride=(2,2,2), padding=1)
 
     def forward(self, inputs):
-        x = nn.PReLU(self.conv_1(inputs)) # (B, C, D/4, H/4, W/4)
-        x = nn.PReLU(self.conv_trans_1(x)) # (B, C/2, D/2, H/2, W/2)
+        x = self.prelu(self.conv_1(inputs)) # (B, C, D/4, H/4, W/4)
+        x = self.prelu(self.conv_trans_1(x)) # (B, C/2, D/2, H/2, W/2)
         x = torch.sigmoid(self.conv_trans_2(x)) # (B, 3, D, H, W) - Reconstructed video, normalized to [0,1]
         return x
 
