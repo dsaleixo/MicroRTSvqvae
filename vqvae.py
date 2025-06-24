@@ -168,10 +168,10 @@ class VQVAE(nn.Module):
         target_dist = torch.norm(pred_flat - target_flat, dim=1)  # (N,)
 
         # Índices da paleta para cada pixel de alvo e predição
-        target_dists_to_palette = torch.cdist(target_flat.unsqueeze(1), palette.unsqueeze(0))  # (N, 7)
+        target_dists_to_palette = torch.cdist(target_flat.float().unsqueeze(1), palette.float().unsqueeze(0))  # (N, 7)
         palette_indices = torch.argmin(target_dists_to_palette.squeeze(1), dim=1)  # (N,)
 
-        pred_dists_to_palette = torch.cdist(pred_flat.unsqueeze(1), palette.unsqueeze(0))  # (N, 7)
+        pred_dists_to_palette = torch.cdist(pred_flat.unsqueeze(1).float(), palette.float().unsqueeze(0))  # (N, 7)
         pred_closest = torch.argmin(pred_dists_to_palette.squeeze(1), dim=1)  # (N,)
 
         # Máscara onde a predição errou a cor
