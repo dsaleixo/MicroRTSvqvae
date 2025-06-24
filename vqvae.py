@@ -268,7 +268,7 @@ class VQVAE(nn.Module):
         vq_loss_epoch = 0.0
         loss_jesus_epoch = 0.0
         for batch in val_loader:
-            x = batch.to(device,non_blocking=True)
+            x = batch.to(device)
 
            
             #reconstructions, vq_loss, _ = self(x)
@@ -318,7 +318,7 @@ class VQVAE(nn.Module):
             vq_loss_epoch = 0.0
             loss_jesus_epoch = 0.0
             for batch in train_loader:
-                x = batch.to(device,non_blocking=True)
+                x = batch.to(device)
 
                 optimizer.zero_grad()
                 #reconstructions, vq_loss, _ = self(x)
@@ -365,6 +365,7 @@ class VQVAE(nn.Module):
                     f"VQ Loss: {vqLossVal:.4f}"
                     )
                 print()
+            torch.cuda.empty_cache()
                 
             
 
