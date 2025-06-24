@@ -237,15 +237,15 @@ class VQVAE(nn.Module):
 
 
 
-    
-    def validation(self, val_loader: DataLoader): 
+
+    def validation(self, val_loader: DataLoader, device='cuda'): 
         self.eval()
         total_loss_epoch = 0.0
         recon_loss_epoch = 0.0
         vq_loss_epoch = 0.0
         loss_jesus_epoch = 0.0
         for batch in val_loader:
-            x = batch
+            x = batch.to(device,non_blocking=True)
 
            
             #reconstructions, vq_loss, _ = self(x)
@@ -289,7 +289,7 @@ class VQVAE(nn.Module):
             vq_loss_epoch = 0.0
             loss_jesus_epoch = 0.0
             for batch in train_loader:
-                x = batch
+                x = batch.to(device,non_blocking=True)
 
                 optimizer.zero_grad()
                 #reconstructions, vq_loss, _ = self(x)
