@@ -365,7 +365,11 @@ class VQVAE(nn.Module):
                     f"VQ Loss: {vqLossVal:.4f}"
                     )
                 print()
+            print(f"Memória alocada: {torch.cuda.memory_allocated() / 1024**2:.2f} MiB")
+            print(f"Memória reservada (cache): {torch.cuda.memory_reserved() / 1024**2:.2f} MiB")
             torch.cuda.empty_cache()
+            print(f"Memória alocada: {torch.cuda.memory_allocated() / 1024**2:.2f} MiB")
+            print(f"Memória reservada (cache): {torch.cuda.memory_reserved() / 1024**2:.2f} MiB")
                 
             
 
