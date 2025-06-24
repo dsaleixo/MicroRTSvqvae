@@ -85,9 +85,9 @@ class Encoder(nn.Module):
         # Typically, you'd have ResidualStack(num_hiddens, num_residual_layers, num_residual_hiddens)
 
     def forward(self, inputs):
-        x = F.relu(self.conv_1(inputs)) # (B, C/2, D/2, H/2, W/2)
-        x = F.relu(self.conv_2(x))     # (B, C, D/4, H/4, W/4)
-        x = self.conv_3(x)             # (B, C, D/4, H/4, W/4) - Output feature map
+        x = nn.PReLU(self.conv_1(inputs)) # (B, C/2, D/2, H/2, W/2)
+        x = nn.PReLU(self.conv_2(x))     # (B, C, D/4, H/4, W/4)
+        x = nn.PReLU(self.conv_3(x) )            # (B, C, D/4, H/4, W/4) - Output feature map
         return x
 
 # --- 3. Define the Decoder (3D CNN with Transposed Convolutions) ---
@@ -105,8 +105,8 @@ class Decoder(nn.Module):
                                                 kernel_size=(4,4,4), stride=(2,2,2), padding=1)
 
     def forward(self, inputs):
-        x = F.relu(self.conv_1(inputs)) # (B, C, D/4, H/4, W/4)
-        x = F.relu(self.conv_trans_1(x)) # (B, C/2, D/2, H/2, W/2)
+        x = nn.PReLU(self.conv_1(inputs)) # (B, C, D/4, H/4, W/4)
+        x = nn.PReLU(self.conv_trans_1(x)) # (B, C/2, D/2, H/2, W/2)
         x = torch.sigmoid(self.conv_trans_2(x)) # (B, 3, D, H, W) - Reconstructed video, normalized to [0,1]
         return x
 
@@ -150,6 +150,49 @@ class VQVAE(nn.Module):
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
 
+
+    def closest_palette_loss(self, pred_rgb, target_rgb, palette) -> torch.Tensor:
+        """
+        pred_rgb: (B, 3, T, H, W) — saída contínua da rede, valores em [0, 1]
+        target_rgb: (B, 3, T, H, W) — imagem original, onde cada pixel é uma das 7 cores
+        palette: (7, 3) — paleta de cores, valores em [0, 1]
+        """
+        device = pred_rgb.device
+        B, _, T, H, W = pred_rgb.shape
+        N = B * T * H * W
+
+        pred_flat = pred_rgb.permute(0, 2, 3, 4, 1).reshape(N, 3)
+        target_flat = target_rgb.permute(0, 2, 3, 4, 1).reshape(N, 3)
+
+        # Distância da predição à cor-alvo
+        target_dist = torch.norm(pred_flat - target_flat, dim=1)  # (N,)
+
+        # Índices da paleta para cada pixel de alvo e predição
+        target_dists_to_palette = torch.cdist(target_flat.unsqueeze(1), palette.unsqueeze(0))  # (N, 7)
+        palette_indices = torch.argmin(target_dists_to_palette.squeeze(1), dim=1)  # (N,)
+
+        pred_dists_to_palette = torch.cdist(pred_flat.unsqueeze(1), palette.unsqueeze(0))  # (N, 7)
+        pred_closest = torch.argmin(pred_dists_to_palette.squeeze(1), dim=1)  # (N,)
+
+        # Máscara onde a predição errou a cor
+        mask_wrong = (pred_closest != palette_indices)  # (N,)
+
+        # Máscara onde a cor-alvo é preto (ex: índice 0 da paleta)
+        is_black = (palette_indices == 5)  # (N,)
+
+        # Define pesos: menor peso para preto, peso 1 para outras cores
+        weights = torch.ones(N, device=device)
+        weights[is_black] = 0.1  # penalidade menor para preto
+
+        # Aplica penalidade onde houve erro
+        if mask_wrong.any():
+            loss = (target_dist[mask_wrong] * weights[mask_wrong]).mean()
+        else:
+            loss = torch.tensor(0.0, device=device, dtype=pred_rgb.dtype)
+
+        return loss
+
+    '''
     def closest_palette_loss(self,pred_rgb, target_rgb, palette):
         """
         pred_rgb: (B, 3, T, H, W) — saída contínua da rede, valores em [0, 1]
@@ -187,7 +230,14 @@ class VQVAE(nn.Module):
             loss = torch.tensor(0.0, device=device)
 
         return loss
+    '''
 
+
+
+
+
+
+    
     def validation(self, val_loader: DataLoader): 
         self.eval()
         total_loss_epoch = 0.0
