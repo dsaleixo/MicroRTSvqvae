@@ -348,8 +348,8 @@ class VQVAE(nn.Module):
             if bestVal >jesusLossVal:
                 print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxUpdateXXXXXXXXXXXXXXXXXxx")
                 bestVal=jesusLossVal
-                torch.save(self.state_dict(), f"BestTrainModelBest.pth")
-                torch.save(self.state_dict(), f"BestTrainModel{epoch}.pth")
+                torch.save(self.state_dict(), f"BestTEstModelBest.pth")
+                torch.save(self.state_dict(), f"BestTEstModel{epoch}.pth")
 
             
             if epoch%1==0:
