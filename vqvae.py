@@ -161,11 +161,11 @@ class VQVAE(nn.Module):
         B, _, T, H, W = pred_rgb.shape
         N = B * T * H * W
 
-        pred_flat = pred_rgb.permute(0, 2, 3, 4, 1).reshape(N, 3).float()
-        target_flat = target_rgb.permute(0, 2, 3, 4, 1).reshape(N, 3).float()
+        pred_flat = pred_rgb.permute(0, 2, 3, 4, 1).reshape(N, 3)
+        target_flat = target_rgb.permute(0, 2, 3, 4, 1).reshape(N, 3)
 
         # Distância da predição à cor-alvo
-        target_dist = torch.norm(pred_flat - target_flat, dim=1).float()  # (N,)
+        target_dist = torch.norm(pred_flat - target_flat, dim=1)  # (N,)
 
         # Índices da paleta para cada pixel de alvo e predição
         target_dists_to_palette = torch.cdist(target_flat.unsqueeze(1), palette.unsqueeze(0))  # (N, 7)
