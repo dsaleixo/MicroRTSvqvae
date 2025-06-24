@@ -291,7 +291,8 @@ class VQVAE(nn.Module):
         self.to(device)
     # Otimizador AdamW
         optimizer = torch.optim.AdamW(self.parameters(), lr=3e-4, weight_decay=0)
-
+        with open('saida42.txt', 'w') as f:
+            pass
         # Agendador de taxa de aprendizado
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
         bestTrain=100000000000000
@@ -341,31 +342,34 @@ class VQVAE(nn.Module):
             scheduler.step()  # Atualiza o lr com o scheduler
             current_lr = scheduler.get_last_lr()[0]
             totalLossVal, reconLossVal,jesusLossVal,vqLossVal =self.validation(val_loader)
-            if bestTrain>loss_jesus_epoch:
+            if bestTrain>loss_jesus_epoch and epoch%500>100:
                 bestTrain=loss_jesus_epoch
                 torch.save(self.state_dict(), "BestTrainModel.pth")
 
-            if bestVal >jesusLossVal:
-                print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxUpdateXXXXXXXXXXXXXXXXXxx")
+            if bestVal >jesusLossVal and epoch%500>100:
+                with open('saida42.txt', 'a') as f:
+                    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxUpdateXXXXXXXXXXXXXXXXXxx", file=f)
                 bestVal=jesusLossVal
                 torch.save(self.state_dict(), f"BestTEstModelBest.pth")
                 torch.save(self.state_dict(), f"BestTEstModel{epoch}.pth")
 
             
             if epoch%1==0:
-                print(f"Train [Epoch {epoch+1}/{max_epochs}] "
-                    f"Total Loss: {total_loss_epoch:.4f}, "
-                    f"Recon Loss: {recon_loss_epoch:.4f}, "
-                    f"Jesus Loss: {loss_jesus_epoch:.4f}, "
-                    f"VQ Loss: {vq_loss_epoch:.4f}"
-                    )
-                print(f"Val [Epoch {epoch+1}/{max_epochs}] "
-                    f"Total Loss: {totalLossVal:.4f}, "
-                    f"Recon Loss: {reconLossVal:.4f}, "
-                    f"Jesus Loss: {jesusLossVal:.4f}, "
-                    f"VQ Loss: {vqLossVal:.4f}"
-                    )
-                print()
+                with open('saida42.txt', 'a') as f:
+    
+                    print(f"Train [Epoch {epoch+1}/{max_epochs}] "
+                        f"Total Loss: {total_loss_epoch:.4f}, "
+                        f"Recon Loss: {recon_loss_epoch:.4f}, "
+                        f"Jesus Loss: {loss_jesus_epoch:.4f}, "
+                        f"VQ Loss: {vq_loss_epoch:.4f}", file=f
+                        )
+                    print(f"Val [Epoch {epoch+1}/{max_epochs}] "
+                        f"Total Loss: {totalLossVal:.4f}, "
+                        f"Recon Loss: {reconLossVal:.4f}, "
+                        f"Jesus Loss: {jesusLossVal:.4f}, "
+                        f"VQ Loss: {vqLossVal:.4f}", file=f
+                        )
+                    print()
             print(f"Memória alocada: {torch.cuda.memory_allocated() / 1024**2:.2f} MiB")
             print(f"Memória reservada (cache): {torch.cuda.memory_reserved() / 1024**2:.2f} MiB")
             torch.cuda.empty_cache()
