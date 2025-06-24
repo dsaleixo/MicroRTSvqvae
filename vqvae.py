@@ -257,7 +257,7 @@ class VQVAE(nn.Module):
             recon_loss_epoch += reconstruction_loss.item()
             
             loss_jesus_epoch += loss_jesus.item()
-        return total_loss_epoch, recon_loss_epoch,loss_jesus_epoch,vq_loss_epoch 
+        return total_loss_epoch, recon_loss_epoch,loss_jesus_epoch
 
 
 
@@ -284,7 +284,7 @@ class VQVAE(nn.Module):
             recon_loss_epoch += reconstruction_loss.item()
             
             loss_jesus_epoch += loss_jesus.item()
-        return total_loss_epoch, recon_loss_epoch,loss_jesus_epoch 
+        return total_loss_epoch, recon_loss_epoch,loss_jesus_epoch ,vq_loss_epoch 
 
     def loopTrain(self, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader, device='cuda'):
         self.to(device)
