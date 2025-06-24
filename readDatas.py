@@ -29,7 +29,8 @@ class ReadDatas():
         for arq in arquivos:
                         
                         print(arq)
-                        loaded_data = np.load('./datas3/'+arq)
+                        loaded_data = np.load('./datas3/' + arq)
+                        loaded_data = loaded_data.astype(np.float16)
                         shape = loaded_data.shape
                         #print(shape,len(dados))
                         aux = [ loaded_data]
