@@ -241,7 +241,7 @@ class VQVAE(nn.Module):
         vq_loss_epoch = 0.0
         loss_jesus_epoch = 0.0
         for batch in val_loader:
-            x = batch.to(device,non_blocking=True)
+            x = batch.to(device,non_blocking=True).half() 
 
            
             #reconstructions, vq_loss, _ = self(x)
@@ -268,7 +268,7 @@ class VQVAE(nn.Module):
         vq_loss_epoch = 0.0
         loss_jesus_epoch = 0.0
         for batch in val_loader:
-            x = batch.to(device,non_blocking=True)
+            x = batch.to(device,non_blocking=True).half() 
 
            
             #reconstructions, vq_loss, _ = self(x)
@@ -312,7 +312,7 @@ class VQVAE(nn.Module):
                     )
         bestVal = jesusLossVal
         for epoch in range(max_epochs):
-            self.train()
+            self.train().half() 
             total_loss_epoch = 0.0
             recon_loss_epoch = 0.0
             vq_loss_epoch = 0.0
