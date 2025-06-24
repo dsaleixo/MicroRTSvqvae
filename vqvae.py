@@ -1,3 +1,4 @@
+import psutil
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -370,7 +371,10 @@ class VQVAE(nn.Module):
             torch.cuda.empty_cache()
             print(f"Memória alocada: {torch.cuda.memory_allocated() / 1024**2:.2f} MiB")
             print(f"Memória reservada (cache): {torch.cuda.memory_reserved() / 1024**2:.2f} MiB")
-                
+            mem = psutil.virtual_memory()
+            print(f'Total: {mem.total / 1e9:.2f} GB')
+            print(f'Usado: {mem.used / 1e9:.2f} GB')
+            print(f'Livre: {mem.available / 1e9:.2f} GB')  
             
 
         print("Treinamento finalizado.")
