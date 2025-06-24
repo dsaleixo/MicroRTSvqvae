@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     # Instantiate the VQ-VAE model
     model = VQVAE(num_hiddens,
-                num_embeddings, embedding_dim, commitment_cost,device).to(device).half() 
+                num_embeddings, embedding_dim, commitment_cost,device).to(device)
     n=100
      
 
