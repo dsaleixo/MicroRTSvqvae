@@ -415,15 +415,24 @@ class VQVAE(nn.Module):
             recon_loss_epoch = 0.0
             vq_loss_epoch = 0.0
             loss_jesus_epoch = 0.0
+
+
+            cont_batch=0
+            n_batch = len(train_loader)
             for batch in train_loader:
+
+                if cont_batch>n_batch*0.15:
+                    break
+                cont+=1
+
                 x = batch.to(device)
-                for _ in range(5):
-                    optimizer.zero_grad()
-                    #reconstructions, vq_loss, _ = self(x)
-                    reconstructions, vq_loss, _ = self(x,epoch)
-                    reconstruction_loss = F.mse_loss(reconstructions, x)
-                    loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
-                    total_loss = loss_jesus+reconstruction_loss*0.1#+# vq_loss
+                
+                optimizer.zero_grad()
+                #reconstructions, vq_loss, _ = self(x)
+                reconstructions, vq_loss, _ = self(x,epoch)
+                reconstruction_loss = F.mse_loss(reconstructions, x)
+                loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
+                total_loss = loss_jesus+reconstruction_loss*0.1#+# vq_loss
                 
                    
                 total_loss.backward()
