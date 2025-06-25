@@ -76,59 +76,82 @@ class VectorQuantizer(nn.Module):
 
 class VectorQuantizerEMA(nn.Module):
     def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.99, epsilon: float = 1e-5):
+        """
+        VQ-VAE codebook with Exponential Moving Average (EMA) updates.
+
+        Args:
+            num_embeddings: Number of discrete codebook vectors (M).
+            embedding_dim: Dimension of each codebook vector (D).
+            decay: EMA decay factor (γ).
+            epsilon: Small value to avoid division by zero.
+        """
         super().__init__()
-        self.num_embeddings = num_embeddings  # M
-        self.embedding_dim = embedding_dim    # D
-        self.decay = decay                    # γ
+
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+        self.decay = decay
         self.epsilon = epsilon
 
-        # Codebook embeddings
+        # Codebook: shape (M, D)
         self.register_buffer("embedding", torch.randn(num_embeddings, embedding_dim))
         self.register_buffer("cluster_size", torch.zeros(num_embeddings))
         self.register_buffer("embedding_avg", self.embedding.clone())
 
     def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        # z: (B, C, D, H, W)
-        input_shape = z.shape
-        flat_input = z.permute(0, 2, 3, 4, 1).contiguous().view(-1, self.embedding_dim)  # (N, C)
+        """
+        Args:
+            z: Input tensor of shape (B, C, D, H, W)
 
-        # Compute distances to codebook
-        distances = (flat_input.pow(2).sum(1, keepdim=True)
-                     - 2 * flat_input @ self.embedding.t()
-                     + self.embedding.pow(2).sum(1, keepdim=True).t())
+        Returns:
+            quantized: Quantized output (B, C, D, H, W)
+            loss: Quantization loss (for logging only)
+            encoding_indices: Indices of codebook entries used (B, D, H, W)
+        """
+        input_shape = z.shape  # (B, C, D, H, W)
+        flat_input = z.permute(0, 2, 3, 4, 1).contiguous().view(-1, self.embedding_dim)  # (N, D)
 
-        # Assign nearest embedding
-        encoding_indices = torch.argmin(distances, dim=1)
+        # Compute squared L2 distance to each embedding
+        distances = (
+            flat_input.pow(2).sum(1, keepdim=True)
+            - 2 * flat_input @ self.embedding.t()
+            + self.embedding.pow(2).sum(1, keepdim=True).t()
+        )  # (N, M)
+
+        # Get nearest codebook entry for each vector
+        encoding_indices = torch.argmin(distances, dim=1)  # (N,)
         encodings = F.one_hot(encoding_indices, self.num_embeddings).type(flat_input.dtype)  # (N, M)
 
-        # Quantize
-        quantized = encodings @ self.embedding
-        quantized = quantized.view(input_shape).permute(0, 4, 1, 2, 3).contiguous()  # (B, C, D, H, W)
+        # Quantize: replace inputs by nearest embeddings
+        quantized = encodings @ self.embedding  # (N, D)
+        quantized = quantized.view(input_shape[0], input_shape[2], input_shape[3], input_shape[4], input_shape[1])  # (B, D, H, W, C)
+        quantized = quantized.permute(0, 4, 1, 2, 3).contiguous()  # (B, C, D, H, W)
 
         if self.training:
             with torch.no_grad():
-                # EMA cluster size
-                new_cluster_size = encodings.sum(0)
+                # Update cluster size with EMA
+                new_cluster_size = encodings.sum(0)  # (M,)
                 self.cluster_size.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
 
-                # EMA embedding average
-                embed_sum = encodings.T @ flat_input  # (M, C)
+                # Update embedding average with EMA
+                embed_sum = encodings.T @ flat_input  # (M, D)
                 self.embedding_avg.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
 
-                # Normalize to get new embedding
+                # Normalize to get new embeddings
                 n = self.cluster_size.sum()
                 cluster_size = ((self.cluster_size + self.epsilon) / (n + self.num_embeddings * self.epsilon)) * n
 
                 self.embedding.copy_(self.embedding_avg / cluster_size.unsqueeze(1))
 
-        # Straight-through estimator
+        # Straight-through estimator: copy gradients from z
         quantized_st = z + (quantized - z).detach()
 
-        # No commitment loss; only quantization loss used for reporting
+        # Only quantization loss (for monitoring)
         loss = F.mse_loss(quantized_st, z)
 
-        return quantized_st, loss, encoding_indices.view(input_shape[0], input_shape[2], input_shape[3], input_shape[4])
+        # Reshape encoding indices back to spatial/temporal shape
+        encoding_indices = encoding_indices.view(input_shape[0], input_shape[2], input_shape[3], input_shape[4])  # (B, D, H, W)
 
+        return quantized_st, loss, encoding_indices
 
 
 # --- 2. Define the Encoder (3D CNN) ---
@@ -200,9 +223,11 @@ class VQVAE(nn.Module):
 
         # Apply VQ layer
         quantized, vq_loss, encodings = z,None,None
+        self.eval()
         if epoch >10 : 
             quantized, vq_loss, encodings = self.vq(z) 
         # Decode the quantized latent features
+        self.train()
         reconstructions = self.decoder(quantized)
 
         return reconstructions, vq_loss, encodings # encodings are the discrete indices (for prior training)
