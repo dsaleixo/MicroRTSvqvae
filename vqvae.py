@@ -227,16 +227,25 @@ class VQVAE(nn.Module):
         z = self.pre_vq_conv(z) # (B, embedding_dim, D/4, H/4, W/4)
 
         # Apply VQ layer
-        if epoch > 0:
+        if epoch > 10:
             was_training = self.vq.training
             self.vq.eval()
+            # roda quantização com VQ-EMA
             quantized, vq_loss, encodings = self.vq(z)
+
+            # aplica blending entre z e quantized
+            # fator de mistura aumenta com o tempo
+            blend_epochs = 10  # ou o que fizer sentido para você
+            blend_factor = min(1.0, (epoch - 10) / blend_epochs)
+            quantized = (1 - blend_factor) * z + blend_factor * quantized
             if was_training:
                 self.vq.train()
         else:
+            # VQ ainda desativado
             quantized = z
             vq_loss = torch.tensor(0.0, device=x.device)
             encodings = None
+        
         # Decode the quantized latent features
         
         reconstructions = self.decoder(quantized)
