@@ -423,7 +423,7 @@ class VQVAE(nn.Module):
 
                 if cont_batch>n_batch*0.15:
                     break
-                cont+=1
+                cont_batch+=1
 
                 x = batch.to(device)
                 
