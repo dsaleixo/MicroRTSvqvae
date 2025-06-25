@@ -227,7 +227,7 @@ class VQVAE(nn.Module):
         z = self.pre_vq_conv(z) # (B, embedding_dim, D/4, H/4, W/4)
 
         # Apply VQ layer
-        if epoch > 10:
+        if epoch > 0:
             was_training = self.vq.training
             self.vq.eval()
             quantized, vq_loss, encodings = self.vq(z)
@@ -424,9 +424,8 @@ class VQVAE(nn.Module):
                 reconstruction_loss = F.mse_loss(reconstructions, x)
                 loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
                 total_loss = loss_jesus+reconstruction_loss#+# vq_loss
-                if epoch>10:
-                    vq_loss_epoch += vq_loss.item()
-                    total_loss+=vq_loss
+                vq_loss_epoch += vq_loss.item()
+                   
                 total_loss.backward()
                 #torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
                 optimizer.step()
