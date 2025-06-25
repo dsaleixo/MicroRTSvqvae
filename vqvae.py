@@ -393,11 +393,12 @@ class VQVAE(nn.Module):
         return total_loss_epoch, recon_loss_epoch,loss_jesus_epoch ,vq_loss_epoch 
 
     def loopTrain(self, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader, device='cuda'):
-        self.to(device)
-    # Otimizador AdamW
-        optimizer = torch.optim.AdamW(self.parameters(), lr=3e-4, weight_decay=0.99)
         with open('./saida42.txt', 'w') as f:
             pass
+        self.to(device)
+    # Otimizador AdamW
+        optimizer = torch.optim.AdamW(self.parameters(), lr=3e-4, weight_decay=1e-4)
+        
         # Agendador de taxa de aprendizado
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
         bestTrain=100000000000000
