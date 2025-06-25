@@ -440,6 +440,7 @@ class VQVAE(nn.Module):
             if bestVal >jesusLossVal and epoch>10:
                 with open('./saida42.txt', 'a') as f:
                     print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxUpdateXXXXXXXXXXXXXXXXXxx", file=f)
+                    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxUpdateXXXXXXXXXXXXXXXXXxx")
                 bestVal=jesusLossVal
                 torch.save(self.state_dict(), f"BestTEstModelBest.pth")
                 torch.save(self.state_dict(), f"BestTEstModel{epoch}.pth")
@@ -459,6 +460,19 @@ class VQVAE(nn.Module):
                         f"Recon Loss: {reconLossVal:.4f}, "
                         f"Jesus Loss: {jesusLossVal:.4f}, "
                         f"VQ Loss: {vqLossVal:.4f}", file=f
+                        )
+                    print()
+                    print(f"Train [Epoch {epoch+1}/{max_epochs}] "
+                        f"Total Loss: {total_loss_epoch:.4f}, "
+                        f"Recon Loss: {recon_loss_epoch:.4f}, "
+                        f"Jesus Loss: {loss_jesus_epoch:.4f}, "
+                        f"VQ Loss: {vq_loss_epoch:.4f}"
+                        )
+                    print(f"Val [Epoch {epoch+1}/{max_epochs}] "
+                        f"Total Loss: {totalLossVal:.4f}, "
+                        f"Recon Loss: {reconLossVal:.4f}, "
+                        f"Jesus Loss: {jesusLossVal:.4f}, "
+                        f"VQ Loss: {vqLossVal:.4f}"
                         )
                     print()
             print(f"Memória alocada: {torch.cuda.memory_allocated() / 1024**2:.2f} MiB")
