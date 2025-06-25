@@ -227,7 +227,7 @@ class VQVAE(nn.Module):
         z = self.pre_vq_conv(z) # (B, embedding_dim, D/4, H/4, W/4)
 
         # Apply VQ layer
-        if epoch > 10:
+        if epoch > -1:
             was_training = self.vq.training
             self.vq.eval()
             # roda quantização com VQ-EMA
