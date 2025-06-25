@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import DataLoader
 
+'''
 # --- 1. Define the Vector Quantization Layer ---
 class VectorQuantizer(nn.Module):
     def __init__(self, num_embeddings, embedding_dim, commitment_cost):
@@ -69,13 +70,72 @@ class VectorQuantizer(nn.Module):
         # to (B, D, H, W, M) or similar. For simplicity, we return the (N, M) encodings.
         # This isn't directly used by the decoder, but rather the quantized tensor.
         return quantized, loss, encodings
+'''
+
+
+
+class VectorQuantizerEMA(nn.Module):
+    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.99, epsilon: float = 1e-5):
+        super().__init__()
+        self.num_embeddings = num_embeddings  # M
+        self.embedding_dim = embedding_dim    # D
+        self.decay = decay                    # γ
+        self.epsilon = epsilon
+
+        # Codebook embeddings
+        self.register_buffer("embedding", torch.randn(num_embeddings, embedding_dim))
+        self.register_buffer("cluster_size", torch.zeros(num_embeddings))
+        self.register_buffer("embedding_avg", self.embedding.clone())
+
+    def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        # z: (B, C, D, H, W)
+        input_shape = z.shape
+        flat_input = z.permute(0, 2, 3, 4, 1).contiguous().view(-1, self.embedding_dim)  # (N, C)
+
+        # Compute distances to codebook
+        distances = (flat_input.pow(2).sum(1, keepdim=True)
+                     - 2 * flat_input @ self.embedding.t()
+                     + self.embedding.pow(2).sum(1, keepdim=True).t())
+
+        # Assign nearest embedding
+        encoding_indices = torch.argmin(distances, dim=1)
+        encodings = F.one_hot(encoding_indices, self.num_embeddings).type(flat_input.dtype)  # (N, M)
+
+        # Quantize
+        quantized = encodings @ self.embedding
+        quantized = quantized.view(input_shape).permute(0, 4, 1, 2, 3).contiguous()  # (B, C, D, H, W)
+
+        if self.training:
+            with torch.no_grad():
+                # EMA cluster size
+                new_cluster_size = encodings.sum(0)
+                self.cluster_size.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
+
+                # EMA embedding average
+                embed_sum = encodings.T @ flat_input  # (M, C)
+                self.embedding_avg.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
+
+                # Normalize to get new embedding
+                n = self.cluster_size.sum()
+                cluster_size = ((self.cluster_size + self.epsilon) / (n + self.num_embeddings * self.epsilon)) * n
+
+                self.embedding.copy_(self.embedding_avg / cluster_size.unsqueeze(1))
+
+        # Straight-through estimator
+        quantized_st = z + (quantized - z).detach()
+
+        # No commitment loss; only quantization loss used for reporting
+        loss = F.mse_loss(quantized_st, z)
+
+        return quantized_st, loss, encoding_indices.view(input_shape[0], input_shape[2], input_shape[3], input_shape[4])
+
 
 
 # --- 2. Define the Encoder (3D CNN) ---
 class Encoder(nn.Module):
     def __init__(self, in_channels, num_hiddens,):
         super().__init__()
-        self.prelu = nn.PReLU()
+        self.prelu = nn.ELU()
         # Initial convolution that reduces spatial/temporal dimensions
         self.conv_1 = nn.Conv3d(in_channels, num_hiddens // 2, kernel_size=(4,4,4), stride=(2,2,2), padding=1)
         self.conv_2 = nn.Conv3d(num_hiddens // 2, num_hiddens, kernel_size=(4,4,4), stride=(2,2,2), padding=1)
@@ -95,7 +155,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, in_channels, num_hiddens):
         super().__init__()
-        self.prelu = nn.PReLU()
+        self.prelu = nn.ELU()
         # Initial convolution for processing the latent features
         self.conv_1 = nn.Conv3d(in_channels, num_hiddens, kernel_size=(3,3,3), stride=(1,1,1), padding=1)
 
@@ -119,7 +179,7 @@ class VQVAE(nn.Module):
 
         self.encoder = Encoder(3, num_hiddens,)
         self.pre_vq_conv = nn.Conv3d(num_hiddens, embedding_dim, kernel_size=1, stride=1) # Maps encoder output to embedding_dim
-        self.vq = VectorQuantizer(num_embeddings, embedding_dim, commitment_cost)
+        self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
         self.decoder = Decoder(embedding_dim, num_hiddens)
 
         self.palette = torch.tensor([
@@ -140,7 +200,7 @@ class VQVAE(nn.Module):
 
         # Apply VQ layer
         quantized, vq_loss, encodings = z,None,None
-        if epoch >100 : 
+        if epoch >10 : 
             quantized, vq_loss, encodings = self.vq(z) 
         # Decode the quantized latent features
         reconstructions = self.decoder(quantized)
@@ -151,7 +211,7 @@ class VQVAE(nn.Module):
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
 
-
+    '''
     def closest_palette_loss(self, pred_rgb, target_rgb, palette) -> torch.Tensor:
         """
         pred_rgb: (B, 3, T, H, W) — saída contínua da rede, valores em [0, 1]
@@ -231,7 +291,7 @@ class VQVAE(nn.Module):
             loss = torch.tensor(0.0, device=device)
 
         return loss
-    '''
+   
 
 
 
@@ -290,8 +350,8 @@ class VQVAE(nn.Module):
     def loopTrain(self, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader, device='cuda'):
         self.to(device)
     # Otimizador AdamW
-        optimizer = torch.optim.AdamW(self.parameters(), lr=3e-4, weight_decay=0)
-        with open('saida42.txt', 'w') as f:
+        optimizer = torch.optim.AdamW(self.parameters(), lr=3e-4, weight_decay=0.99)
+        with open('./saida42.txt', 'w') as f:
             pass
         # Agendador de taxa de aprendizado
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
@@ -328,7 +388,7 @@ class VQVAE(nn.Module):
                 reconstruction_loss = F.mse_loss(reconstructions, x)
                 loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
                 total_loss = loss_jesus+reconstruction_loss#+# vq_loss
-                if epoch%500>100:
+                if epoch>10:
                     vq_loss_epoch += vq_loss.item()
                     total_loss+=vq_loss
                 total_loss.backward()
@@ -342,12 +402,12 @@ class VQVAE(nn.Module):
             scheduler.step()  # Atualiza o lr com o scheduler
             current_lr = scheduler.get_last_lr()[0]
             totalLossVal, reconLossVal,jesusLossVal,vqLossVal =self.validation(val_loader)
-            if bestTrain>loss_jesus_epoch and epoch%500>100:
+            if bestTrain>loss_jesus_epoch and epoch>10:
                 bestTrain=loss_jesus_epoch
                 torch.save(self.state_dict(), "BestTrainModel.pth")
 
-            if bestVal >jesusLossVal and epoch%500>100:
-                with open('saida42.txt', 'a') as f:
+            if bestVal >jesusLossVal and epoch>10:
+                with open('./saida42.txt', 'a') as f:
                     print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxUpdateXXXXXXXXXXXXXXXXXxx", file=f)
                 bestVal=jesusLossVal
                 torch.save(self.state_dict(), f"BestTEstModelBest.pth")
@@ -355,7 +415,7 @@ class VQVAE(nn.Module):
 
             
             if epoch%1==0:
-                with open('saida42.txt', 'a') as f:
+                with open('./saida42.txt', 'a') as f:
     
                     print(f"Train [Epoch {epoch+1}/{max_epochs}] "
                         f"Total Loss: {total_loss_epoch:.4f}, "
