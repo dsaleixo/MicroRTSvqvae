@@ -23,7 +23,7 @@ if __name__ == "__main__":
     
 
     # Model Parameters
-    num_hiddens = 128
+    num_hiddens = 64
 
     num_embeddings = 512 # Size of the codebook
     embedding_dim = 128   # Dimension of each embedding vector

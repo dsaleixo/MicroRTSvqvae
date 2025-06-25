@@ -110,13 +110,18 @@ class VectorQuantizerEMA(nn.Module):
         input_shape = z.shape  # (B, C, D, H, W)
         flat_input = z.permute(0, 2, 3, 4, 1).contiguous().view(-1, self.embedding_dim)  # (N, D)
 
+
+
+        distances = torch.cdist(flat_input.unsqueeze(0), self.embedding.unsqueeze(0)).squeeze(0)  # (N, M)
+        encoding_indices = torch.argmin(distances, dim=1)
+        '''
         # Compute squared L2 distance to each embedding
         distances = (
             flat_input.pow(2).sum(1, keepdim=True)
             - 2 * flat_input @ self.embedding.t()
             + self.embedding.pow(2).sum(1, keepdim=True).t()
         )  # (N, M)
-
+        '''
         # Get nearest codebook entry for each vector
         encoding_indices = torch.argmin(distances, dim=1)  # (N,)
         encodings = F.one_hot(encoding_indices, self.num_embeddings).type(flat_input.dtype)  # (N, M)
