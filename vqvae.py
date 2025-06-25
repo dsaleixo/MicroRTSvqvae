@@ -222,12 +222,18 @@ class VQVAE(nn.Module):
         z = self.pre_vq_conv(z) # (B, embedding_dim, D/4, H/4, W/4)
 
         # Apply VQ layer
-        quantized, vq_loss, encodings = z,None,None
-        self.eval()
-        if epoch >10 : 
-            quantized, vq_loss, encodings = self.vq(z) 
+        if epoch > 10:
+            was_training = self.vq.training
+            self.vq.eval()
+            quantized, vq_loss, encodings = self.vq(z)
+            if was_training:
+                self.vq.train()
+        else:
+            quantized = z
+            vq_loss = torch.tensor(0.0, device=x.device)
+            encodings = None
         # Decode the quantized latent features
-        self.train()
+        
         reconstructions = self.decoder(quantized)
 
         return reconstructions, vq_loss, encodings # encodings are the discrete indices (for prior training)
