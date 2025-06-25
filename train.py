@@ -18,7 +18,7 @@ if __name__ == "__main__":
     test_size = total_size - train_size  # 20 amostras para teste
     train_set, val_set = random_split(datas, [train_size, test_size])
 
-    train_loader = DataLoader(train_set, batch_size=64)
+    train_loader = DataLoader(train_set, batch_size=128)
     val_loader = DataLoader(val_set, batch_size=64, )
     
 
