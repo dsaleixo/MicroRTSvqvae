@@ -374,7 +374,7 @@ class VQVAE(nn.Module):
             loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
             total_loss = loss_jesus+reconstruction_loss#+# vq_loss
             vq_loss_epoch += vq_loss.item()
-            total_loss+=vq_loss
+          
 
 
             total_loss_epoch += total_loss.item()
@@ -417,19 +417,19 @@ class VQVAE(nn.Module):
             loss_jesus_epoch = 0.0
             for batch in train_loader:
                 x = batch.to(device)
-
-                optimizer.zero_grad()
-                #reconstructions, vq_loss, _ = self(x)
-                reconstructions, vq_loss, _ = self(x,epoch)
-                reconstruction_loss = F.mse_loss(reconstructions, x)
-                loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
-                total_loss = loss_jesus+reconstruction_loss#+# vq_loss
-                vq_loss_epoch += vq_loss.item()
+                for _ in range(5):
+                    optimizer.zero_grad()
+                    #reconstructions, vq_loss, _ = self(x)
+                    reconstructions, vq_loss, _ = self(x,epoch)
+                    reconstruction_loss = F.mse_loss(reconstructions, x)
+                    loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
+                    total_loss = loss_jesus+reconstruction_loss*0.1#+# vq_loss
+                
                    
                 total_loss.backward()
                 #torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
                 optimizer.step()
-
+                vq_loss_epoch += vq_loss.item()
                 total_loss_epoch += total_loss.item()
                 recon_loss_epoch += reconstruction_loss.item()
                 
