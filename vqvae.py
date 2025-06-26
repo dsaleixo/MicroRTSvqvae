@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import DataLoader
 from lion_pytorch import Lion
-
+'''
 # --- 1. Define the Vector Quantization Layer ---
 class VectorQuantizer(nn.Module):
     def __init__(self, num_embeddings, embedding_dim, commitment_cost=0.25):
@@ -75,7 +75,7 @@ class VectorQuantizer(nn.Module):
 
 
 class VectorQuantizerEMA(nn.Module):
-    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.99, epsilon: float = 1e-3):
+    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.99, epsilon: float = 1e-6):
         """
         VQ-VAE codebook with Exponential Moving Average (EMA) updates.
 
@@ -114,14 +114,7 @@ class VectorQuantizerEMA(nn.Module):
 
         distances = torch.cdist(flat_input.unsqueeze(0), self.embedding.unsqueeze(0)).squeeze(0)  # (N, M)
         encoding_indices = torch.argmin(distances, dim=1)
-'''
-        # Compute squared L2 distance to each embedding
-        #distances = (
-        #    flat_input.pow(2).sum(1, keepdim=True)
-        #    - 2 * flat_input @ self.embedding.t()
-        #    + self.embedding.pow(2).sum(1, keepdim=True).t()
-        #)  # (N, M)
-'''
+
         # Get nearest codebook entry for each vector
         encoding_indices = torch.argmin(distances, dim=1)  # (N,)
         encodings = F.one_hot(encoding_indices, self.num_embeddings).type(flat_input.dtype)  # (N, M)
@@ -158,7 +151,7 @@ class VectorQuantizerEMA(nn.Module):
 
         return quantized_st, loss, encoding_indices
 
-'''
+
 class ResidualBlock3D(nn.Module):
     def __init__(self, channels: int):
         super().__init__()
@@ -248,7 +241,7 @@ class VQVAE(nn.Module):
         z = self.pre_vq_conv(z) # (B, embedding_dim, D/4, H/4, W/4)
 
         # Apply VQ layer
-        if epoch > 10:
+        if epoch > 100:
             was_training = self.vq.training
             self.vq.eval()
             # roda quantização com VQ-EMA
