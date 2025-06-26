@@ -256,14 +256,15 @@ class VQVAE(nn.Module):
 
         # Apply VQ layer
         if epoch > 20:
-            was_training = self.vq.training
-            self.vq.eval()
+            if epoch<70:
+                was_training = self.vq.training
+                self.vq.eval()
             # roda quantização com VQ-EMA
             quantized, vq_loss, encodings,perplexity, used_codes = self.vq(z)
 
             # aplica blending entre z e quantized
             # fator de mistura aumenta com o tempo
-            blend_epochs = 50  # ou o que fizer sentido para você
+            blend_epochs = 100  # ou o que fizer sentido para você
             blend_factor = min(1.0, (epoch - 20) / blend_epochs)
             quantized = (1 - blend_factor) * z + blend_factor * quantized
             if was_training:

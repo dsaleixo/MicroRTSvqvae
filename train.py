@@ -26,13 +26,18 @@ if __name__ == "__main__":
     num_hiddens = 32
 
     num_embeddings = 512 # Size of the codebook
-    embedding_dim = 128   # Dimension of each embedding vector
+    embedding_dim = 64   # Dimension of each embedding vector
     commitment_cost = 0.25
-
+    from torch import nn
+    def weights_init_kaiming(m):
+        if isinstance(m, (nn.Conv3d, nn.ConvTranspose3d, nn.Linear)):
+            nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            if m.bias is not None:
+                nn.init.zeros_(m.bias)
     # Instantiate the VQ-VAE model
     model = VQVAE(num_hiddens,
                 num_embeddings, embedding_dim, commitment_cost,device).to(device)
     n=100
-     
+    model.apply(weights_init_kaiming)
 
     model.loopTrain(max_epochs=30000,train_loader=train_loader,val_loader=val_loader)
