@@ -75,7 +75,7 @@ class VectorQuantizer(nn.Module):
 
 
 class VectorQuantizerEMA(nn.Module):
-    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.9, epsilon: float = 1e-6):
+    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.99, epsilon: float = 1e-6):
         """
         VQ-VAE codebook with Exponential Moving Average (EMA) updates.
 
@@ -427,7 +427,7 @@ class VQVAE(nn.Module):
             pass
         self.to(device)
        
-        optimizer = Lion(self.parameters(), lr=3e-4, weight_decay=0)
+        optimizer = Lion(self.parameters(), lr=3e-4, weight_decay=0.0001)
         
         # Agendador de taxa de aprendizado
    
