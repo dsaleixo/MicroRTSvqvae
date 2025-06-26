@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import DataLoader
-
+from lion_pytorch import Lion
 '''
 # --- 1. Define the Vector Quantization Layer ---
 class VectorQuantizer(nn.Module):
@@ -397,10 +397,10 @@ class VQVAE(nn.Module):
             pass
         self.to(device)
     # Otimizador AdamW
-        optimizer = torch.optim.AdamW(self.parameters(), lr=3e-4, weight_decay=1e-4)
+        optimizer = Lion(model.parameters(), lr=3e-4, weight_decay=1e-4)
         
         # Agendador de taxa de aprendizado
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
+        #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
         bestTrain=100000000000000
 
         totalLossVal, reconLossVal,jesusLossVal =self.baseline(val_loader)
