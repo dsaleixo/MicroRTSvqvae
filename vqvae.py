@@ -158,45 +158,66 @@ class VectorQuantizerEMA(nn.Module):
 
         return quantized_st, loss, encoding_indices
 
+class ResidualBlock3D(nn.Module):
+    def __init__(self, channels: int):
+        super().__init__()
+        self.block = nn.Sequential(
+            nn.ELU(inplace=True),
+            nn.Conv3d(channels, channels, kernel_size=3, stride=1, padding=1),
+            nn.ELU(inplace=True),
+            nn.Conv3d(channels, channels, kernel_size=1, stride=1)
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x + self.block(x)
 
 # --- 2. Define the Encoder (3D CNN) ---
 class Encoder(nn.Module):
-    def __init__(self, in_channels, num_hiddens,):
+    def __init__(self, in_channels: int, num_hiddens: int):
         super().__init__()
-        self.prelu = nn.ELU()
-        # Initial convolution that reduces spatial/temporal dimensions
-        self.conv_1 = nn.Conv3d(in_channels, num_hiddens // 2, kernel_size=(4,4,4), stride=(2,2,2), padding=1)
-        self.conv_2 = nn.Conv3d(num_hiddens // 2, num_hiddens, kernel_size=(4,4,4), stride=(2,2,2), padding=1)
-        self.conv_3 = nn.Conv3d(num_hiddens, num_hiddens, kernel_size=(3,3,3), stride=(1,1,1), padding=1)
+        self.activation = nn.ELU(inplace=True)
 
-        # Placeholder for residual layers (can be added for deeper networks)
-        # For simplicity, we omit full residual block implementation here.
-        # Typically, you'd have ResidualStack(num_hiddens, num_residual_layers, num_residual_hiddens)
+        self.conv_1 = nn.Conv3d(in_channels, num_hiddens // 2,
+                                kernel_size=4, stride=(1,2,2), padding=1)  # ⏱️ menos agressivo no tempo
+        self.conv_2 = nn.Conv3d(num_hiddens // 2, num_hiddens,
+                                kernel_size=4, stride=(2,2,2), padding=1)
+        self.conv_3 = nn.Conv3d(num_hiddens, num_hiddens,
+                                kernel_size=3, stride=1, padding=1)
 
-    def forward(self, inputs):
-        x = self.prelu(self.conv_1(inputs)) # (B, C/2, D/2, H/2, W/2)
-        x = self.prelu(self.conv_2(x))     # (B, C, D/4, H/4, W/4)
-        x = self.prelu(self.conv_3(x) )            # (B, C, D/4, H/4, W/4) - Output feature map
+        self.res_block_1 = ResidualBlock3D(num_hiddens)
+        self.res_block_2 = ResidualBlock3D(num_hiddens)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.activation(self.conv_1(x))  # (B, C/2, D, H/2, W/2)
+        x = self.activation(self.conv_2(x))  # (B, C, D/2, H/4, W/4)
+        x = self.activation(self.conv_3(x))  # (B, C, D/2, H/4, W/4)
+        x = self.res_block_1(x)
+        x = self.res_block_2(x)
         return x
 
 # --- 3. Define the Decoder (3D CNN with Transposed Convolutions) ---
 class Decoder(nn.Module):
-    def __init__(self, in_channels, num_hiddens):
+    def __init__(self, in_channels: int, num_hiddens: int):
         super().__init__()
-        self.prelu = nn.ELU()
-        # Initial convolution for processing the latent features
-        self.conv_1 = nn.Conv3d(in_channels, num_hiddens, kernel_size=(3,3,3), stride=(1,1,1), padding=1)
+        self.activation = nn.ELU(inplace=True)
 
-        # Transposed convolutions for upsampling
+        self.conv_1 = nn.Conv3d(in_channels, num_hiddens,
+                                kernel_size=3, stride=1, padding=1)
+
+        self.res_block_1 = ResidualBlock3D(num_hiddens)
+        self.res_block_2 = ResidualBlock3D(num_hiddens)
+
         self.conv_trans_1 = nn.ConvTranspose3d(num_hiddens, num_hiddens // 2,
-                                                kernel_size=(4,4,4), stride=(2,2,2), padding=1)
-        self.conv_trans_2 = nn.ConvTranspose3d(num_hiddens // 2, 3, # Output 3 channels for RGB video
-                                                kernel_size=(4,4,4), stride=(2,2,2), padding=1)
+                                               kernel_size=4, stride=(2,2,2), padding=1)
+        self.conv_trans_2 = nn.ConvTranspose3d(num_hiddens // 2, 3,
+                                               kernel_size=4, stride=(1,2,2), padding=1)
 
-    def forward(self, inputs):
-        x = self.prelu(self.conv_1(inputs)) # (B, C, D/4, H/4, W/4)
-        x = self.prelu(self.conv_trans_1(x)) # (B, C/2, D/2, H/2, W/2)
-        x = torch.sigmoid(self.conv_trans_2(x)) # (B, 3, D, H, W) - Reconstructed video, normalized to [0,1]
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.activation(self.conv_1(x))       # (B, C, D/2, H/4, W/4)
+        x = self.res_block_1(x)
+        x = self.res_block_2(x)
+        x = self.activation(self.conv_trans_1(x)) # (B, C/2, D, H/2, W/2)
+        x = torch.sigmoid(self.conv_trans_2(x))   # (B, 3, D, H, W)
         return x
 
 # --- 4. Assemble the VQ-VAE Model ---
@@ -400,7 +421,7 @@ class VQVAE(nn.Module):
         optimizer = Lion(self.parameters(), lr=3e-4, weight_decay=1e-4)
         
         # Agendador de taxa de aprendizado
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=2000)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
         bestTrain=100000000000000
 
         totalLossVal, reconLossVal,jesusLossVal =self.baseline(val_loader)
