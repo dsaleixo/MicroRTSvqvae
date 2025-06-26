@@ -249,9 +249,9 @@ class VQVAE(nn.Module):
 
             # aplica blending entre z e quantized
             # fator de mistura aumenta com o tempo
-            blend_epochs = 10  # ou o que fizer sentido para você
-            blend_factor = min(1.0, (epoch/100 - 10) / blend_epochs)
-            quantized = (1 - blend_factor) * z + blend_factor * quantized
+            #blend_epochs = 10  # ou o que fizer sentido para você
+            #blend_factor = min(1.0, (epoch/100 - 10) / blend_epochs)
+            #quantized = (1 - blend_factor) * z + blend_factor * quantized
             if was_training:
                 self.vq.train()
         else:
