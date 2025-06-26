@@ -156,10 +156,12 @@ class ResidualBlock3D(nn.Module):
     def __init__(self, channels: int):
         super().__init__()
         self.block = nn.Sequential(
-            nn.ELU(inplace=True),
             nn.Conv3d(channels, channels, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm3d(channels),
             nn.ELU(inplace=True),
-            nn.Conv3d(channels, channels, kernel_size=1, stride=1)
+            nn.Conv3d(channels, channels, kernel_size=1, stride=1),
+            nn.BatchNorm3d(channels),
+            nn.ELU(inplace=True),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -167,24 +169,31 @@ class ResidualBlock3D(nn.Module):
 
 # --- 2. Define the Encoder (3D CNN) ---
 class Encoder(nn.Module):
-    def __init__(self, in_channels, num_hiddens,):
+    def __init__(self, in_channels, num_hiddens):
         super().__init__()
-        self.prelu = nn.ELU()
-        # Initial convolution that reduces spatial/temporal dimensions
-        self.conv_1 = nn.Conv3d(in_channels, num_hiddens // 2, kernel_size=(4,4,4), stride=(2,2,2), padding=1)
-        self.conv_2 = nn.Conv3d(num_hiddens // 2, num_hiddens, kernel_size=(4,4,4), stride=(2,2,2), padding=1)
-        self.conv_3 = nn.Conv3d(num_hiddens, num_hiddens, kernel_size=(3,3,3), stride=(1,1,1), padding=1)
+        self.conv_1 = nn.Sequential(
+            nn.Conv3d(in_channels, num_hiddens // 2, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm3d(num_hiddens // 2),
+            nn.ELU(inplace=True)
+        )
+        self.conv_2 = nn.Sequential(
+            nn.Conv3d(num_hiddens // 2, num_hiddens, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm3d(num_hiddens),
+            nn.ELU(inplace=True)
+        )
+        self.conv_3 = nn.Sequential(
+            nn.Conv3d(num_hiddens, num_hiddens, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm3d(num_hiddens),
+            nn.ELU(inplace=True)
+        )
 
-        # Placeholder for residual layers (can be added for deeper networks)
-        # For simplicity, we omit full residual block implementation here.
-        # Typically, you'd have ResidualStack(num_hiddens, num_residual_layers, num_residual_hiddens)
         self.res_block_1 = ResidualBlock3D(num_hiddens)
         self.res_block_2 = ResidualBlock3D(num_hiddens)
 
     def forward(self, inputs):
-        x = self.prelu(self.conv_1(inputs)) # (B, C/2, D/2, H/2, W/2)
-        x = self.prelu(self.conv_2(x))     # (B, C, D/4, H/4, W/4)
-        x = self.prelu(self.conv_3(x) )            # (B, C, D/4, H/4, W/4) - Output feature map
+        x = self.conv_1(inputs)
+        x = self.conv_2(x)
+        x = self.conv_3(x)
         x = self.res_block_1(x)
         x = self.res_block_2(x)
         return x
@@ -193,23 +202,26 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, in_channels, num_hiddens):
         super().__init__()
-        self.prelu = nn.ELU()
-        # Initial convolution for processing the latent features
-        self.conv_1 = nn.Conv3d(in_channels, num_hiddens, kernel_size=(3,3,3), stride=(1,1,1), padding=1)
-        
-        # Transposed convolutions for upsampling
-        self.conv_trans_1 = nn.ConvTranspose3d(num_hiddens, num_hiddens // 2,
-                                                kernel_size=(4,4,4), stride=(2,2,2), padding=1)
-        self.conv_trans_2 = nn.ConvTranspose3d(num_hiddens // 2, 3, # Output 3 channels for RGB video
-                                                kernel_size=(4,4,4), stride=(2,2,2), padding=1)
+        self.conv_1 = nn.Sequential(
+            nn.Conv3d(in_channels, num_hiddens, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm3d(num_hiddens),
+            nn.ELU(inplace=True)
+        )
         self.res_block_1 = ResidualBlock3D(num_hiddens)
         self.res_block_2 = ResidualBlock3D(num_hiddens)
+        self.conv_trans_1 = nn.Sequential(
+            nn.ConvTranspose3d(num_hiddens, num_hiddens // 2, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm3d(num_hiddens // 2),
+            nn.ELU(inplace=True)
+        )
+        self.conv_trans_2 = nn.ConvTranspose3d(num_hiddens // 2, 3, kernel_size=4, stride=2, padding=1)
+
     def forward(self, inputs):
-        x = self.prelu(self.conv_1(inputs)) # (B, C, D/4, H/4, W/4)
+        x = self.conv_1(inputs)
         x = self.res_block_1(x)
         x = self.res_block_2(x)
-        x = self.prelu(self.conv_trans_1(x)) # (B, C/2, D/2, H/2, W/2)
-        x = torch.sigmoid(self.conv_trans_2(x)) # (B, 3, D, H, W) - Reconstructed video, normalized to [0,1]
+        x = self.conv_trans_1(x)
+        x = torch.sigmoid(self.conv_trans_2(x))
         return x
 
 # --- 4. Assemble the VQ-VAE Model ---
