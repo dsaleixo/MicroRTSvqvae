@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # Model Parameters
     num_hiddens = 32
 
-    num_embeddings = 64 # Size of the codebook
+    num_embeddings = 256 # Size of the codebook
     embedding_dim = 64   # Dimension of each embedding vector
     commitment_cost = 0.25
     from torch import nn
