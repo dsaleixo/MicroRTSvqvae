@@ -203,15 +203,18 @@ class Decoder(nn.Module):
         self.prelu = nn.ELU()
         # Initial convolution for processing the latent features
         self.conv_1 = nn.Conv3d(in_channels, num_hiddens, kernel_size=(3,3,3), stride=(1,1,1), padding=1)
-
+        
         # Transposed convolutions for upsampling
         self.conv_trans_1 = nn.ConvTranspose3d(num_hiddens, num_hiddens // 2,
                                                 kernel_size=(4,4,4), stride=(2,2,2), padding=1)
         self.conv_trans_2 = nn.ConvTranspose3d(num_hiddens // 2, 3, # Output 3 channels for RGB video
                                                 kernel_size=(4,4,4), stride=(2,2,2), padding=1)
-
+        self.res_block_1 = ResidualBlock3D(num_hiddens)
+        self.res_block_2 = ResidualBlock3D(num_hiddens)
     def forward(self, inputs):
         x = self.prelu(self.conv_1(inputs)) # (B, C, D/4, H/4, W/4)
+        x = self.res_block_1(x)
+        x = self.res_block_2(x)
         x = self.prelu(self.conv_trans_1(x)) # (B, C/2, D/2, H/2, W/2)
         x = torch.sigmoid(self.conv_trans_2(x)) # (B, 3, D, H, W) - Reconstructed video, normalized to [0,1]
         return x
