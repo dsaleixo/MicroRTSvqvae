@@ -18,15 +18,15 @@ if __name__ == "__main__":
     test_size = total_size - train_size  # 20 amostras para teste
     train_set, val_set = random_split(datas, [train_size, test_size])
 
-    train_loader = DataLoader(train_set, batch_size=128)
-    val_loader = DataLoader(val_set, batch_size=64, )
+    train_loader = DataLoader(train_set, batch_size=160)
+    val_loader = DataLoader(val_set, batch_size=128, )
     
 
     # Model Parameters
     num_hiddens = 64
 
     num_embeddings = 512 # Size of the codebook
-    embedding_dim = 16   # Dimension of each embedding vector
+    embedding_dim = 128   # Dimension of each embedding vector
     commitment_cost = 0.25
 
     # Instantiate the VQ-VAE model
