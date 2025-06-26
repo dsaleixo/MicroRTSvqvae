@@ -524,16 +524,16 @@ class VQVAE(nn.Module):
                         f"Recon Loss: {recon_loss_epoch:.4f}, "
                         f"Jesus Loss: {loss_jesus_epoch:.4f}, "
                         f"VQ Loss: {vq_loss_epoch:.4f}", 
-                        f"VQ perplexity: {perplexity:.4f}", 
-                        f"VQ used_codes: {used_codes:.4f}", 
+                        f"VQ perplexity: {perplexity}", 
+                        f"VQ used_codes: {used_codes}", 
                         file=f
                       
                         )
                     print(f"Val [Epoch {epoch+1}/{max_epochs}] "
                         f"Total Loss: {totalLossVal:.4f}, "
                         f"Recon Loss: {reconLossVal:.4f}, "
-                        f"Jesus Loss: {jesusLossVal:.4f}, "
-                        f"VQ Loss: {vqLossVal:.4f}", file=f
+                        f"Jesus Loss: {jesusLossVal}, "
+                        f"VQ Loss: {vqLossVal:}", file=f
                         )
                     print()
                     print(f"Train [Epoch {epoch+1}/{max_epochs}] "
@@ -541,8 +541,8 @@ class VQVAE(nn.Module):
                         f"Recon Loss: {recon_loss_epoch:.4f}, "
                         f"Jesus Loss: {loss_jesus_epoch:.4f}, "
                         f"VQ Loss: {vq_loss_epoch:.4f}"
-                        f"VQ perplexity: {perplexity:.4f}", 
-                        f"VQ used_codes: {used_codes:.4f}", 
+                        f"VQ perplexity: {perplexity}", 
+                        f"VQ used_codes: {used_codes}", 
                         )
                     print(f"Val [Epoch {epoch+1}/{max_epochs}] "
                         f"Total Loss: {totalLossVal:.4f}, "
