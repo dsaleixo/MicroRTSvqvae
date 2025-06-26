@@ -97,59 +97,61 @@ class VectorQuantizerEMA(nn.Module):
         self.register_buffer("cluster_size", torch.zeros(num_embeddings))
         self.register_buffer("embedding_avg", self.embedding.clone())
 
-    def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Args:
             z: Input tensor of shape (B, C, D, H, W)
 
         Returns:
             quantized: Quantized output (B, C, D, H, W)
-            loss: Quantization loss (for logging only)
+            loss: Quantization loss
             encoding_indices: Indices of codebook entries used (B, D, H, W)
+            perplexity: float tensor
+            used_codes: float tensor (percentual dos códigos utilizados)
         """
         input_shape = z.shape  # (B, C, D, H, W)
         flat_input = z.permute(0, 2, 3, 4, 1).contiguous().view(-1, self.embedding_dim)  # (N, D)
 
-
-
+        # Encontrar índices dos embeddings mais próximos
         distances = torch.cdist(flat_input.unsqueeze(0), self.embedding.unsqueeze(0)).squeeze(0)  # (N, M)
-        encoding_indices = torch.argmin(distances, dim=1)
-
-        # Get nearest codebook entry for each vector
         encoding_indices = torch.argmin(distances, dim=1)  # (N,)
         encodings = F.one_hot(encoding_indices, self.num_embeddings).type(flat_input.dtype)  # (N, M)
 
-        # Quantize: replace inputs by nearest embeddings
+        # Quantização: substituir pelas embeddings correspondentes
         quantized = encodings @ self.embedding  # (N, D)
-        quantized = quantized.view(input_shape[0], input_shape[2], input_shape[3], input_shape[4], input_shape[1])  # (B, D, H, W, C)
+        quantized = quantized.view(input_shape[0], input_shape[2], input_shape[3], input_shape[4], input_shape[1])
         quantized = quantized.permute(0, 4, 1, 2, 3).contiguous()  # (B, C, D, H, W)
 
+        # Monitoramento (sempre)
+        avg_probs = encodings.mean(dim=0)  # (M,)
+        perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
+        used_codes = (self.cluster_size > 1e-5).sum().float() / self.num_embeddings
+
+        # Atualização EMA (somente se treinando)
         if self.training:
             with torch.no_grad():
-                # Update cluster size with EMA
                 new_cluster_size = encodings.sum(0)  # (M,)
                 self.cluster_size.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
 
-                # Update embedding average with EMA
                 embed_sum = encodings.T @ flat_input  # (M, D)
                 self.embedding_avg.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
 
-                # Normalize to get new embeddings
+                # Normalização com segurança numérica
                 n = self.cluster_size.sum()
                 cluster_size = ((self.cluster_size + self.epsilon) / (n + self.num_embeddings * self.epsilon)) * n
 
-                self.embedding.copy_(self.embedding_avg / cluster_size.unsqueeze(1))
+                self.embedding.copy_(self.embedding_avg / (cluster_size.unsqueeze(1) + self.epsilon))
 
-        # Straight-through estimator: copy gradients from z
+        # Estimador Straight-Through
         quantized_st = z + (quantized - z).detach()
 
-        # Only quantization loss (for monitoring)
+        # Perda de quantização
         loss = F.mse_loss(quantized_st, z)
 
-        # Reshape encoding indices back to spatial/temporal shape
-        encoding_indices = encoding_indices.view(input_shape[0], input_shape[2], input_shape[3], input_shape[4])  # (B, D, H, W)
+        # Índices de saída
+        encoding_indices = encoding_indices.view(input_shape[0], input_shape[2], input_shape[3], input_shape[4])
 
-        return quantized_st, loss, encoding_indices
+        return quantized_st, loss, encoding_indices, perplexity, used_codes
 
 
 class ResidualBlock3D(nn.Module):
@@ -257,7 +259,7 @@ class VQVAE(nn.Module):
             was_training = self.vq.training
             self.vq.eval()
             # roda quantização com VQ-EMA
-            quantized, vq_loss, encodings = self.vq(z)
+            quantized, vq_loss, encodings,perplexity, used_codes = self.vq(z)
 
             # aplica blending entre z e quantized
             # fator de mistura aumenta com o tempo
@@ -271,12 +273,12 @@ class VQVAE(nn.Module):
             quantized = z
             vq_loss = torch.tensor(0.0, device=x.device)
             encodings = None
-        
+            perplexity, used_codes =None,None
         # Decode the quantized latent features
         
         reconstructions = self.decoder(quantized)
 
-        return reconstructions, vq_loss, encodings # encodings are the discrete indices (for prior training)
+        return reconstructions, vq_loss, encodings,perplexity, used_codes # encodings are the discrete indices (for prior training)
 
     def configure_optimizers(self):
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
@@ -393,7 +395,7 @@ class VQVAE(nn.Module):
 
 
 
-    def validation(self, val_loader: DataLoader, device='cuda'): 
+    def validation(self, val_loader: DataLoader, device='cuda',): 
         self.eval()
         total_loss_epoch = 0.0
         recon_loss_epoch = 0.0
@@ -404,7 +406,7 @@ class VQVAE(nn.Module):
 
            
             #reconstructions, vq_loss, _ = self(x)
-            reconstructions, vq_loss, _ = self(x,112)
+            reconstructions, vq_loss, _,_,_ = self(x,112)
             reconstruction_loss = F.mse_loss(reconstructions, x)
             loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
             total_loss = loss_jesus+reconstruction_loss#+# vq_loss
@@ -422,9 +424,9 @@ class VQVAE(nn.Module):
         with open('./saida42.txt', 'w') as f:
             pass
         self.to(device)
-    # Otimizador AdamW
-        optimizer = Lion(self.parameters(), lr=3e-4, weight_decay=1e-4)
-        
+       
+        optimizer = Lion(self.parameters(), lr=3e-3, weight_decay=0)
+        '''
         # Agendador de taxa de aprendizado
    
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -433,8 +435,18 @@ class VQVAE(nn.Module):
             factor=0.5,
             patience=8,
             threshold=1e-4,
-            min_lr=1e-6,
+            min_lr=1e-7,
         
+        )
+        '''
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer,
+            max_lr=1e-3,
+            steps_per_epoch=len(train_loader),
+            epochs=200,
+            pct_start=0.1,
+            anneal_strategy='cos',
+            final_div_factor=1e4
         )
         bestTrain=100000000000000
 
@@ -474,7 +486,7 @@ class VQVAE(nn.Module):
                 
                 optimizer.zero_grad()
                 #reconstructions, vq_loss, _ = self(x)
-                reconstructions, vq_loss, _ = self(x,epoch)
+                reconstructions, vq_loss, _,perplexity, used_codes = self(x,epoch)
                 reconstruction_loss = F.mse_loss(reconstructions, x)
                 loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
                 total_loss = loss_jesus+reconstruction_loss*0.1#+# vq_loss
@@ -488,8 +500,8 @@ class VQVAE(nn.Module):
                 recon_loss_epoch += reconstruction_loss.item()
                 
                 loss_jesus_epoch += loss_jesus.item()
-            scheduler.step(total_loss_epoch)  # Atualiza o lr com o scheduler
-            current_lr = scheduler.get_last_lr()[0]
+                scheduler.step()  # Atualiza o lr com o scheduler
+                current_lr = scheduler.get_last_lr()[0]
             totalLossVal, reconLossVal,jesusLossVal,vqLossVal =self.validation(val_loader)
             if bestTrain>loss_jesus_epoch and epoch>20:
                 bestTrain=loss_jesus_epoch
@@ -511,7 +523,11 @@ class VQVAE(nn.Module):
                         f"Total Loss: {total_loss_epoch:.4f}, "
                         f"Recon Loss: {recon_loss_epoch:.4f}, "
                         f"Jesus Loss: {loss_jesus_epoch:.4f}, "
-                        f"VQ Loss: {vq_loss_epoch:.4f}", file=f
+                        f"VQ Loss: {vq_loss_epoch:.4f}", 
+                        f"VQ perplexity: {perplexity:.4f}", 
+                        f"VQ used_codes: {used_codes:.4f}", 
+                        file=f
+                      
                         )
                     print(f"Val [Epoch {epoch+1}/{max_epochs}] "
                         f"Total Loss: {totalLossVal:.4f}, "
@@ -525,6 +541,8 @@ class VQVAE(nn.Module):
                         f"Recon Loss: {recon_loss_epoch:.4f}, "
                         f"Jesus Loss: {loss_jesus_epoch:.4f}, "
                         f"VQ Loss: {vq_loss_epoch:.4f}"
+                        f"VQ perplexity: {perplexity:.4f}", 
+                        f"VQ used_codes: {used_codes:.4f}", 
                         )
                     print(f"Val [Epoch {epoch+1}/{max_epochs}] "
                         f"Total Loss: {totalLossVal:.4f}, "
