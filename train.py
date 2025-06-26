@@ -26,7 +26,7 @@ if __name__ == "__main__":
     num_hiddens = 64
 
     num_embeddings = 512 # Size of the codebook
-    embedding_dim = 128   # Dimension of each embedding vector
+    embedding_dim = 16   # Dimension of each embedding vector
     commitment_cost = 0.25
 
     # Instantiate the VQ-VAE model
