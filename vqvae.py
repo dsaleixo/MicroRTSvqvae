@@ -5,10 +5,10 @@ import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import DataLoader
 from lion_pytorch import Lion
-'''
+
 # --- 1. Define the Vector Quantization Layer ---
 class VectorQuantizer(nn.Module):
-    def __init__(self, num_embeddings, embedding_dim, commitment_cost):
+    def __init__(self, num_embeddings, embedding_dim, commitment_cost=0.25):
         super().__init__()
 
         self.num_embeddings = num_embeddings # M in the paper, size of the codebook
@@ -114,14 +114,14 @@ class VectorQuantizerEMA(nn.Module):
 
         distances = torch.cdist(flat_input.unsqueeze(0), self.embedding.unsqueeze(0)).squeeze(0)  # (N, M)
         encoding_indices = torch.argmin(distances, dim=1)
-        '''
+'''
         # Compute squared L2 distance to each embedding
-        distances = (
-            flat_input.pow(2).sum(1, keepdim=True)
-            - 2 * flat_input @ self.embedding.t()
-            + self.embedding.pow(2).sum(1, keepdim=True).t()
-        )  # (N, M)
-        '''
+        #distances = (
+        #    flat_input.pow(2).sum(1, keepdim=True)
+        #    - 2 * flat_input @ self.embedding.t()
+        #    + self.embedding.pow(2).sum(1, keepdim=True).t()
+        #)  # (N, M)
+'''
         # Get nearest codebook entry for each vector
         encoding_indices = torch.argmin(distances, dim=1)  # (N,)
         encodings = F.one_hot(encoding_indices, self.num_embeddings).type(flat_input.dtype)  # (N, M)
@@ -158,7 +158,7 @@ class VectorQuantizerEMA(nn.Module):
 
         return quantized_st, loss, encoding_indices
 
-
+'''
 class ResidualBlock3D(nn.Module):
     def __init__(self, channels: int):
         super().__init__()
@@ -227,7 +227,8 @@ class VQVAE(nn.Module):
 
         self.encoder = Encoder(3, num_hiddens,)
         self.pre_vq_conv = nn.Conv3d(num_hiddens, embedding_dim, kernel_size=1, stride=1) # Maps encoder output to embedding_dim
-        self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
+        #self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
+        self.vq =VectorQuantizer(num_embeddings, embedding_dim)
         self.decoder = Decoder(embedding_dim, num_hiddens)
 
         self.palette = torch.tensor([
@@ -463,7 +464,7 @@ class VQVAE(nn.Module):
                 reconstruction_loss = F.mse_loss(reconstructions, x)
                 loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
                 #total_loss = loss_jesus#+reconstruction_loss*0.1#+# vq_loss
-                total_loss = reconstruction_loss#+# vq_loss
+                total_loss = reconstruction_loss+vq_loss
                    
                 total_loss.backward()
                 #torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
