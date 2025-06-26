@@ -462,7 +462,7 @@ class VQVAE(nn.Module):
                 reconstructions, vq_loss, _ = self(x,epoch)
                 reconstruction_loss = F.mse_loss(reconstructions, x)
                 loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
-                total_loss = loss_jesus+reconstruction_loss*0.1#+# vq_loss
+                total_loss = loss_jesus#+reconstruction_loss*0.1#+# vq_loss
                 
                    
                 total_loss.backward()
