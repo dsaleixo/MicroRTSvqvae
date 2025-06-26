@@ -2,7 +2,7 @@
 #SBATCH --job-name=meu_job
 #SBATCH --output=saida.log
 #SBATCH --error=erro.log
-#SBATCH --time=10:15:00
+#SBATCH --time=48:15:00
 #SBATCH --account=rrg-lelis
 #SBATCH --gres=gpu:a100_2g.10gb:1
 #SBATCH --mem=32G
