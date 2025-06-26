@@ -241,7 +241,7 @@ class VQVAE(nn.Module):
         z = self.pre_vq_conv(z) # (B, embedding_dim, D/4, H/4, W/4)
 
         # Apply VQ layer
-        if epoch > 100:
+        if epoch > 20:
             was_training = self.vq.training
             self.vq.eval()
             # roda quantização com VQ-EMA
@@ -249,9 +249,9 @@ class VQVAE(nn.Module):
 
             # aplica blending entre z e quantized
             # fator de mistura aumenta com o tempo
-            #blend_epochs = 10  # ou o que fizer sentido para você
-            #blend_factor = min(1.0, (epoch/100 - 10) / blend_epochs)
-            #quantized = (1 - blend_factor) * z + blend_factor * quantized
+            blend_epochs = 50  # ou o que fizer sentido para você
+            blend_factor = min(1.0, (epoch - 20) / blend_epochs)
+            quantized = (1 - blend_factor) * z + blend_factor * quantized
             if was_training:
                 self.vq.train()
         else:
@@ -414,7 +414,16 @@ class VQVAE(nn.Module):
         optimizer = Lion(self.parameters(), lr=3e-4, weight_decay=1e-4)
         
         # Agendador de taxa de aprendizado
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
+   
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="min",          # ou "max" se você monitorar uma métrica que cresce (tipo PSNR)
+            factor=0.5,
+            patience=8,
+            threshold=1e-4,
+            min_lr=1e-6,
+            verbose=True,
+        )
         bestTrain=100000000000000
 
         totalLossVal, reconLossVal,jesusLossVal =self.baseline(val_loader)
@@ -456,8 +465,8 @@ class VQVAE(nn.Module):
                 reconstructions, vq_loss, _ = self(x,epoch)
                 reconstruction_loss = F.mse_loss(reconstructions, x)
                 loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
-                #total_loss = loss_jesus#+reconstruction_loss*0.1#+# vq_loss
-                total_loss = loss_jesus#+vq_loss
+                total_loss = loss_jesus+reconstruction_loss*0.1#+# vq_loss
+                #total_loss = loss_jesus#+vq_loss
                    
                 total_loss.backward()
                 #torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
@@ -467,14 +476,14 @@ class VQVAE(nn.Module):
                 recon_loss_epoch += reconstruction_loss.item()
                 
                 loss_jesus_epoch += loss_jesus.item()
-            scheduler.step()  # Atualiza o lr com o scheduler
+            scheduler.step(total_loss_epoch)  # Atualiza o lr com o scheduler
             current_lr = scheduler.get_last_lr()[0]
             totalLossVal, reconLossVal,jesusLossVal,vqLossVal =self.validation(val_loader)
-            if bestTrain>loss_jesus_epoch and epoch>10:
+            if bestTrain>loss_jesus_epoch and epoch>20:
                 bestTrain=loss_jesus_epoch
                 torch.save(self.state_dict(), "BestTrainModel.pth")
 
-            if bestVal >jesusLossVal and epoch>10:
+            if bestVal >jesusLossVal and epoch>20:
                 with open('./saida42.txt', 'a') as f:
                     print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxUpdateXXXXXXXXXXXXXXXXXxx", file=f)
                     print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxUpdateXXXXXXXXXXXXXXXXXxx")
