@@ -427,7 +427,7 @@ class VQVAE(nn.Module):
             pass
         self.to(device)
        
-        optimizer = Lion(self.parameters(), lr=3e-3, weight_decay=0)
+        optimizer = Lion(self.parameters(), lr=3e-4, weight_decay=0)
         '''
         # Agendador de taxa de aprendizado
    
