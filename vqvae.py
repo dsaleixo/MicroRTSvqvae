@@ -196,8 +196,8 @@ class Encoder(nn.Module):
         x = self.conv_1(inputs)
         x = self.conv_2(x)
         x = self.conv_3(x)
-        x = self.res_block_1(x)
-        x = self.res_block_2(x)
+        #x = self.res_block_1(x)
+        #x = self.res_block_2(x)
         return x
 
 # --- 3. Define the Decoder (3D CNN with Transposed Convolutions) ---
@@ -220,8 +220,8 @@ class Decoder(nn.Module):
 
     def forward(self, inputs):
         x = self.conv_1(inputs)
-        x = self.res_block_1(x)
-        x = self.res_block_2(x)
+        #x = self.res_block_1(x)
+        #x = self.res_block_2(x)
         x = self.conv_trans_1(x)
         x = torch.sigmoid(self.conv_trans_2(x))
         return x
