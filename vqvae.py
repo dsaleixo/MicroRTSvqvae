@@ -256,8 +256,9 @@ class VQVAE(nn.Module):
 
         # Apply VQ layer
         if epoch > 20:
+            was_training = self.vq.training
             if epoch<70:
-                was_training = self.vq.training
+                
                 self.vq.eval()
             # roda quantização com VQ-EMA
             quantized, vq_loss, encodings,perplexity, used_codes = self.vq(z)
