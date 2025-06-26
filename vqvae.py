@@ -451,7 +451,7 @@ class VQVAE(nn.Module):
             n_batch = len(train_loader)
             for batch in train_loader:
 
-                if cont_batch>n_batch*0.15 and epoch<40:
+                if cont_batch>n_batch*0.15 and epoch<0:
                     break
                 cont_batch+=1
 
