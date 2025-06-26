@@ -206,14 +206,14 @@ class Decoder(nn.Module):
         super().__init__()
         self.conv_1 = nn.Sequential(
             nn.Conv3d(in_channels, num_hiddens, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm3d(num_hiddens),
+           # nn.BatchNorm3d(num_hiddens),
             nn.ELU(inplace=True)
         )
         self.res_block_1 = ResidualBlock3D(num_hiddens)
         self.res_block_2 = ResidualBlock3D(num_hiddens)
         self.conv_trans_1 = nn.Sequential(
             nn.ConvTranspose3d(num_hiddens, num_hiddens // 2, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm3d(num_hiddens // 2),
+            #snn.BatchNorm3d(num_hiddens // 2),
             nn.ELU(inplace=True)
         )
         self.conv_trans_2 = nn.ConvTranspose3d(num_hiddens // 2, 3, kernel_size=4, stride=2, padding=1)
