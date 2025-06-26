@@ -93,8 +93,8 @@ class VectorQuantizerEMA(nn.Module):
         self.epsilon = epsilon
 
         # Codebook: shape (M, D)
-        self.register_buffer("embedding", torch.randn(num_embeddings, embedding_dim))
-        self.register_buffer("cluster_size", torch.zeros(num_embeddings))
+        self.register_buffer("embedding", F.normalize(torch.randn(num_embeddings, embedding_dim), dim=1) * 1.0)
+        self.register_buffer("cluster_size", torch.ones(num_embeddings))
         self.register_buffer("embedding_avg", self.embedding.clone())
 
     def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
