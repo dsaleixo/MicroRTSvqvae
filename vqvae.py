@@ -397,7 +397,7 @@ class VQVAE(nn.Module):
             pass
         self.to(device)
     # Otimizador AdamW
-        optimizer = Lion(model.parameters(), lr=3e-4, weight_decay=1e-4)
+        optimizer = Lion(self.parameters(), lr=3e-4, weight_decay=1e-4)
         
         # Agendador de taxa de aprendizado
         #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
