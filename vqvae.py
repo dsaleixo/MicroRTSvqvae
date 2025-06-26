@@ -428,7 +428,7 @@ class VQVAE(nn.Module):
         self.to(device)
        
         optimizer = Lion(self.parameters(), lr=3e-4, weight_decay=0)
-        '''
+        
         # Agendador de taxa de aprendizado
    
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -450,6 +450,7 @@ class VQVAE(nn.Module):
             anneal_strategy='cos',
             final_div_factor=1e4
         )
+        '''
         bestTrain=100000000000000
 
         totalLossVal, reconLossVal,jesusLossVal =self.baseline(val_loader)
@@ -502,8 +503,8 @@ class VQVAE(nn.Module):
                 recon_loss_epoch += reconstruction_loss.item()
                 
                 loss_jesus_epoch += loss_jesus.item()
-                scheduler.step()  # Atualiza o lr com o scheduler
-                current_lr = scheduler.get_last_lr()[0]
+            scheduler.step(total_loss_epoch)  # Atualiza o lr com o scheduler
+            current_lr = scheduler.get_last_lr()[0]
             totalLossVal, reconLossVal,jesusLossVal,vqLossVal =self.validation(val_loader)
             if bestTrain>loss_jesus_epoch and epoch>20:
                 bestTrain=loss_jesus_epoch
