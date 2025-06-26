@@ -220,8 +220,8 @@ class VQVAE(nn.Module):
 
         self.encoder = Encoder(3, num_hiddens,)
         self.pre_vq_conv = nn.Conv3d(num_hiddens, embedding_dim, kernel_size=1, stride=1) # Maps encoder output to embedding_dim
-        #self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
-        self.vq =VectorQuantizer(num_embeddings, embedding_dim)
+        self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
+        #self.vq =VectorQuantizer(num_embeddings, embedding_dim)
         self.decoder = Decoder(embedding_dim, num_hiddens)
 
         self.palette = torch.tensor([
