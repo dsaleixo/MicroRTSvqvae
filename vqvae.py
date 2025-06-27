@@ -263,9 +263,9 @@ class VQVAE(nn.Module):
 
             # aplica blending entre z e quantized
             # fator de mistura aumenta com o tempo
-            blend_epochs = 100  # ou o que fizer sentido para você
-            blend_factor = min(1.0, (epoch - 20) / blend_epochs)
-            quantized = (1 - blend_factor) * z + blend_factor * quantized
+            #blend_epochs = 100  # ou o que fizer sentido para você
+            #blend_factor = min(1.0, (epoch - 20) / blend_epochs)
+            #quantized = (1 - blend_factor) * z + blend_factor * quantized
 
         else:
             # VQ ainda desativado
@@ -424,7 +424,7 @@ class VQVAE(nn.Module):
             pass
         self.to(device)
        
-        optimizer = Lion(self.parameters(), lr=3e-4, weight_decay=0.0001)
+        optimizer = Lion(self.parameters(), lr=5e-5, weight_decay=0.00001)
         
         # Agendador de taxa de aprendizado
    
