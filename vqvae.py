@@ -75,7 +75,7 @@ class VectorQuantizer(nn.Module):
 
 
 class VectorQuantizerEMA(nn.Module):
-    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.99, epsilon: float = 1e-6):
+    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.9, epsilon: float = 1e-6):
         """
         VQ-VAE codebook with Exponential Moving Average (EMA) updates.
 
