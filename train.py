@@ -19,7 +19,7 @@ if __name__ == "__main__":
     train_set, val_set = random_split(datas, [train_size, test_size])
 
     train_loader = DataLoader(train_set, batch_size=64)
-    val_loader = DataLoader(val_set, batch_size=16, )
+    val_loader = DataLoader(val_set, batch_size=8, )
     
 
     # Model Parameters
