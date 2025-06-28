@@ -160,10 +160,10 @@ class ResidualBlock3D(nn.Module):
         self.block = nn.Sequential(
             nn.Conv3d(channels, channels//2, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm3d(channels),
-            nn.Relu(inplace=True),
+            nn.ReLu(inplace=True),
             nn.Conv3d(channels//2, channels, kernel_size=1, stride=1),
             nn.BatchNorm3d(channels),
-            nn.Relu(inplace=True),
+            nn.ReLu(inplace=True),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -177,13 +177,13 @@ class Encoder(nn.Module):
         self.initial_conv = nn.Sequential(
             nn.Conv3d(in_channels, num_hiddens // 2, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm3d(num_hiddens // 2),
-            nn.Relu(inplace=True)
+            nn.ReLu(inplace=True)
         )
 
         self.conv_1 = nn.Sequential(
             nn.Conv3d(num_hiddens // 2, num_hiddens // 2, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm3d(num_hiddens // 2),
-            nn.Relu(inplace=True)
+            nn.ReLu(inplace=True)
         )
 
         self.res_block_1 = ResidualBlock3D(num_hiddens // 2)
@@ -191,7 +191,7 @@ class Encoder(nn.Module):
         self.conv_2 = nn.Sequential(
             nn.Conv3d(num_hiddens // 2, num_hiddens, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm3d(num_hiddens),
-            nn.Relu(inplace=True)
+            nn.ReLu(inplace=True)
         )
 
         self.res_block_2 = ResidualBlock3D(num_hiddens)
@@ -199,7 +199,7 @@ class Encoder(nn.Module):
         self.conv_3 = nn.Sequential(
             nn.Conv3d(num_hiddens, num_hiddens, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm3d(num_hiddens),
-            nn.Relu(inplace=True)
+            nn.ReLu(inplace=True)
         )
 
     def forward(self, inputs):
@@ -218,14 +218,14 @@ class Decoder(nn.Module):
         self.conv_1 = nn.Sequential(
             nn.Conv3d(in_channels, num_hiddens, kernel_size=3, stride=1, padding=1),
            # nn.BatchNorm3d(num_hiddens),
-            nn.Relu(inplace=True)
+            nn.ReLu(inplace=True)
         )
         self.res_block_1 = ResidualBlock3D(num_hiddens)
         self.res_block_2 = ResidualBlock3D(num_hiddens)
         self.conv_trans_1 = nn.Sequential(
             nn.ConvTranspose3d(num_hiddens, num_hiddens // 2, kernel_size=4, stride=2, padding=1),
             #snn.BatchNorm3d(num_hiddens // 2),
-            nn.Relu(inplace=True)
+            nn.ReLu(inplace=True)
         )
         self.conv_trans_2 = nn.ConvTranspose3d(num_hiddens // 2, 3, kernel_size=4, stride=2, padding=1)
 
