@@ -236,7 +236,7 @@ class Encoder(nn.Module):
 
         self.initial = nn.Sequential(
             nn.Conv3d(in_channels, base_channels, kernel_size=3, stride=1, padding=1),
-            nn.GroupNorm(8, base_channels),
+            nn.BatchNorm3d( base_channels),
             nn.ReLU(inplace=True)
         )
 
@@ -315,7 +315,7 @@ class VQVAE(nn.Module):
         super().__init__()
 
         self.encoder = Encoder(3, num_hiddens,)
-        self.pre_vq_conv = nn.Conv3d(num_hiddens, embedding_dim, kernel_size=1, stride=1) # Maps encoder output to embedding_dim
+        self.pre_vq_conv = nn.Conv3d(num_hiddens*4, embedding_dim, kernel_size=1, stride=1) # Maps encoder output to embedding_dim
         self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
         #self.vq =VectorQuantizer(num_embeddings, embedding_dim)
         self.decoder = Decoder(embedding_dim, num_hiddens)
