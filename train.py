@@ -26,7 +26,7 @@ if __name__ == "__main__":
     num_hiddens = 128
 
     num_embeddings = 256 # Size of the codebook
-    embedding_dim = 64   # Dimension of each embedding vector
+    embedding_dim = 512   # Dimension of each embedding vector
     commitment_cost = 0.25
     from torch import nn
     def weights_init_kaiming(m):
