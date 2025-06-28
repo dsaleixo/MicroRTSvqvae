@@ -75,7 +75,7 @@ class VectorQuantizer(nn.Module):
 
 
 class VectorQuantizerEMA(nn.Module):
-    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.9, epsilon: float = 1e-6):
+    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.99, epsilon: float = 1e-6):
         """
         VQ-VAE codebook with Exponential Moving Average (EMA) updates.
 
@@ -158,12 +158,12 @@ class ResidualBlock3D(nn.Module):
     def __init__(self, channels: int):
         super().__init__()
         self.block = nn.Sequential(
-            nn.Conv3d(channels, channels, kernel_size=3, stride=1, padding=1),
+            nn.Conv3d(channels, channels//2, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm3d(channels),
-            nn.ELU(inplace=True),
-            nn.Conv3d(channels, channels, kernel_size=1, stride=1),
+            nn.Relu(inplace=True),
+            nn.Conv3d(channels//2, channels, kernel_size=1, stride=1),
             nn.BatchNorm3d(channels),
-            nn.ELU(inplace=True),
+            nn.Relu(inplace=True),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -177,13 +177,13 @@ class Encoder(nn.Module):
         self.initial_conv = nn.Sequential(
             nn.Conv3d(in_channels, num_hiddens // 2, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm3d(num_hiddens // 2),
-            nn.ELU(inplace=True)
+            nn.Relu(inplace=True)
         )
 
         self.conv_1 = nn.Sequential(
             nn.Conv3d(num_hiddens // 2, num_hiddens // 2, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm3d(num_hiddens // 2),
-            nn.ELU(inplace=True)
+            nn.Relu(inplace=True)
         )
 
         self.res_block_1 = ResidualBlock3D(num_hiddens // 2)
@@ -191,7 +191,7 @@ class Encoder(nn.Module):
         self.conv_2 = nn.Sequential(
             nn.Conv3d(num_hiddens // 2, num_hiddens, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm3d(num_hiddens),
-            nn.ELU(inplace=True)
+            nn.Relu(inplace=True)
         )
 
         self.res_block_2 = ResidualBlock3D(num_hiddens)
@@ -199,7 +199,7 @@ class Encoder(nn.Module):
         self.conv_3 = nn.Sequential(
             nn.Conv3d(num_hiddens, num_hiddens, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm3d(num_hiddens),
-            nn.ELU(inplace=True)
+            nn.Relu(inplace=True)
         )
 
     def forward(self, inputs):
@@ -218,14 +218,14 @@ class Decoder(nn.Module):
         self.conv_1 = nn.Sequential(
             nn.Conv3d(in_channels, num_hiddens, kernel_size=3, stride=1, padding=1),
            # nn.BatchNorm3d(num_hiddens),
-            nn.ELU(inplace=True)
+            nn.Relu(inplace=True)
         )
         self.res_block_1 = ResidualBlock3D(num_hiddens)
         self.res_block_2 = ResidualBlock3D(num_hiddens)
         self.conv_trans_1 = nn.Sequential(
             nn.ConvTranspose3d(num_hiddens, num_hiddens // 2, kernel_size=4, stride=2, padding=1),
             #snn.BatchNorm3d(num_hiddens // 2),
-            nn.ELU(inplace=True)
+            nn.Relu(inplace=True)
         )
         self.conv_trans_2 = nn.ConvTranspose3d(num_hiddens // 2, 3, kernel_size=4, stride=2, padding=1)
 
@@ -435,7 +435,7 @@ class VQVAE(nn.Module):
             pass
         self.to(device)
        
-        optimizer = Lion(self.parameters(), lr=5e-5, weight_decay=0.00001)
+        optimizer = Lion(self.parameters(), lr=5e-4, weight_decay=0.0)
         
         # Agendador de taxa de aprendizado
    
@@ -443,7 +443,7 @@ class VQVAE(nn.Module):
             optimizer,
             mode="min",          # ou "max" se você monitorar uma métrica que cresce (tipo PSNR)
             factor=0.5,
-            patience=8,
+            patience=30,
             threshold=1e-4,
             min_lr=1e-7,
         
@@ -514,6 +514,9 @@ class VQVAE(nn.Module):
             scheduler.step(total_loss_epoch)  # Atualiza o lr com o scheduler
             current_lr = scheduler.get_last_lr()[0]
             totalLossVal, reconLossVal,jesusLossVal,vqLossVal =self.validation(val_loader)
+            with open('./saida42.txt', 'a') as f:
+                    print(f"rl {current_lr}", file=f)
+                    print(f"rl {current_lr}")
             if bestTrain>loss_jesus_epoch and epoch>20:
                 bestTrain=loss_jesus_epoch
                 torch.save(self.state_dict(), "BestTrainModel.pth")
