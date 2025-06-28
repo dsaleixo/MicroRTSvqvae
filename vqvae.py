@@ -549,6 +549,11 @@ class VQVAE(nn.Module):
                 
                     )
         print()
+        print(f"Memória alocada: {torch.cuda.memory_allocated() / 1024**2:.2f} MiB")
+        print(f"Memória reservada (cache): {torch.cuda.memory_reserved() / 1024**2:.2f} MiB")
+        torch.cuda.empty_cache()
+        print(f"Memória alocada: {torch.cuda.memory_allocated() / 1024**2:.2f} MiB")
+        print(f"Memória reservada (cache): {torch.cuda.memory_reserved() / 1024**2:.2f} MiB")
         totalLossVal, reconLossVal,jesusLossVal,vqLossVal =self.validation(val_loader)
         print(f"Val 0 "
                     f"Total Loss: {totalLossVal:.4f}, "
@@ -556,6 +561,11 @@ class VQVAE(nn.Module):
                     f"Jesus Loss: {jesusLossVal:.4f}, "
                     f"VQ Loss: {vqLossVal:.4f}"
                     )
+        print(f"Memória alocada: {torch.cuda.memory_allocated() / 1024**2:.2f} MiB")
+        print(f"Memória reservada (cache): {torch.cuda.memory_reserved() / 1024**2:.2f} MiB")
+        torch.cuda.empty_cache()
+        print(f"Memória alocada: {torch.cuda.memory_allocated() / 1024**2:.2f} MiB")
+        print(f"Memória reservada (cache): {torch.cuda.memory_reserved() / 1024**2:.2f} MiB")
         bestVal = jesusLossVal
         for epoch in range(max_epochs):
             self.train()
