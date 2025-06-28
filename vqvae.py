@@ -168,7 +168,7 @@ class ResidualBlock3D(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x + self.block(x)
-
+'''
 # --- 2. Define the Encoder (3D CNN) ---
 class Encoder(nn.Module):
     def __init__(self, in_channels, num_hiddens):
@@ -225,6 +225,88 @@ class Decoder(nn.Module):
         x = self.conv_trans_1(x)
         x = torch.sigmoid(self.conv_trans_2(x))
         return x
+'''
+
+
+
+
+class Encoder(nn.Module):
+    def __init__(self, in_channels: int, base_channels: int = 64):
+        super().__init__()
+
+        self.initial = nn.Sequential(
+            nn.Conv3d(in_channels, base_channels, kernel_size=3, stride=1, padding=1),
+            nn.GroupNorm(8, base_channels),
+            nn.ReLU(inplace=True)
+        )
+
+        layers = []
+        channels = base_channels
+
+        # Etapa 1: ResBlock(s) + downsample
+        for _ in range(2):
+            layers.append(ResidualBlock3D(channels))
+        layers.append(nn.Conv3d(channels, channels*2, kernel_size=4, stride=(2,2,2), padding=1))
+        layers.append(nn.BatchNorm3d( channels*2))
+        layers.append(nn.ReLU(inplace=True))
+        channels *= 2
+
+        # Etapa 2: ResBlock(s) + downsample
+        for _ in range(2):
+            layers.append(ResidualBlock3D(channels))
+        layers.append(nn.Conv3d(channels, channels*2, kernel_size=4, stride=(2,2,2), padding=1))
+        layers.append(nn.BatchNorm3d( channels*2))
+        layers.append(nn.ReLU(inplace=True))
+        channels *= 2
+
+        # Último bloco residual
+        for _ in range(2):
+            layers.append(ResidualBlock3D(channels))
+
+        self.encoder = nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.initial(x)
+        x = self.encoder(x)
+        return x
+    
+
+class Decoder(nn.Module):
+    def __init__(self, out_channels: int, base_channels: int = 64):
+        super().__init__()
+
+        channels = base_channels * 4
+
+        layers = []
+
+        for _ in range(2):
+            layers.append(ResidualBlock3D(channels))
+
+        # Upsample 1
+        layers.append(nn.ConvTranspose3d(channels, channels//2, kernel_size=4, stride=(2,2,2), padding=1))
+        layers.append(nn.BatchNorm3d( channels//2))
+        layers.append(nn.ReLU(inplace=True))
+        channels //=2
+
+        for _ in range(2):
+            layers.append(ResidualBlock3D(channels))
+
+        # Upsample 2
+        layers.append(nn.ConvTranspose3d(channels, channels//2, kernel_size=4, stride=(2,2,2), padding=1))
+        layers.append(nn.BatchNorm3d(channels//2))
+        layers.append(nn.ReLU(inplace=True))
+        channels //=2
+
+        for _ in range(2):
+            layers.append(ResidualBlock3D(channels))
+
+        layers.append(nn.Conv3d(channels, out_channels, kernel_size=3, stride=1, padding=1))
+
+        self.decoder = nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.decoder(x)
+        return torch.sigmoid(x)
 
 # --- 4. Assemble the VQ-VAE Model ---
 class VQVAE(nn.Module):
@@ -248,6 +330,15 @@ class VQVAE(nn.Module):
                 [127,127,127],
             ], dtype=torch.float32).to(device)
         self.palette/=255
+
+
+    def getFeature(self,x):
+        self.eval()
+     
+        z = self.encoder(x) # (B, num_hiddens, D/4, H/4, W/4)
+        z = self.pre_vq_conv(z)
+        quantized, vq_loss, encodings,perplexity, used_codes = self.vq(z)
+        return encodings
 
     def forward(self, x,epoch):
         # x is the input video (B, C, D, H, W) e.g., (1, 3, 32, 128, 128)
