@@ -198,7 +198,7 @@ class VQVAE(nn.Module):
         )
         self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
         #self.vq =VectorQuantizer(num_embeddings, embedding_dim)
-        self.decoder = Decoder(embedding_dim, num_hiddens)
+        self.decoder = Decoder(3, num_hiddens)
 
         self.palette = torch.tensor([
                 [255,255,255],
