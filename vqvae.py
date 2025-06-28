@@ -5,7 +5,6 @@ import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import DataLoader
 from lion_pytorch import Lion
-from torch.cuda.amp import autocast, GradScaler
 '''
 # --- 1. Define the Vector Quantization Layer ---
 class VectorQuantizer(nn.Module):
@@ -374,7 +373,7 @@ class VQVAE(nn.Module):
         else:
             loss = torch.tensor(0.0, device=device)
 
-        return loss/pred_rgb.shape[0]
+        return (loss/pred_rgb.shape)*10
    
 
 
@@ -392,7 +391,7 @@ class VQVAE(nn.Module):
             #reconstructions, vq_loss, _ = self(x)
             reconstructions = torch.zeros_like(x)
             reconstruction_loss = F.mse_loss(reconstructions, x)
-            loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)*10
+            loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
             total_loss = loss_jesus+reconstruction_loss#+# vq_loss
           
           
@@ -419,7 +418,7 @@ class VQVAE(nn.Module):
             #reconstructions, vq_loss, _ = self(x)
             reconstructions, vq_loss, _,_,_ = self(x,112)
             reconstruction_loss = F.mse_loss(reconstructions, x)
-            loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)*10
+            loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
             total_loss = loss_jesus+reconstruction_loss#+# vq_loss
             vq_loss_epoch += vq_loss.item()
           
@@ -477,7 +476,6 @@ class VQVAE(nn.Module):
                     f"Jesus Loss: {jesusLossVal:.4f}, "
                     f"VQ Loss: {vqLossVal:.4f}"
                     )
-        scaler = GradScaler()
         bestVal = jesusLossVal
         for epoch in range(max_epochs):
             self.train()
@@ -486,7 +484,7 @@ class VQVAE(nn.Module):
             vq_loss_epoch = 0.0
             loss_jesus_epoch = 0.0
 
-            
+
             cont_batch=0
             n_batch = len(train_loader)
             for batch in train_loader:
@@ -499,17 +497,13 @@ class VQVAE(nn.Module):
                 
                 optimizer.zero_grad()
                 #reconstructions, vq_loss, _ = self(x)
-                with autocast():
-                    reconstructions, vq_loss, _,perplexity, used_codes = self(x,epoch)
-                    reconstruction_loss = F.mse_loss(reconstructions, x)
-                    loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)*10
-                    total_loss = loss_jesus+reconstruction_loss#+# vq_loss
-                    #total_loss = loss_jesus#+vq_loss
-                scaler.scale(total_loss).backward()
-                scaler.step(optimizer)
-
-                # 🟢 4) Atualiza scaler
-                scaler.update()
+                reconstructions, vq_loss, _,perplexity, used_codes = self(x,epoch)
+                reconstruction_loss = F.mse_loss(reconstructions, x)
+                loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)
+                total_loss = loss_jesus+reconstruction_loss#+# vq_loss
+                #total_loss = loss_jesus#+vq_loss
+                   
+                total_loss.backward()
                 #torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
                 optimizer.step()
                 vq_loss_epoch += vq_loss.item()
