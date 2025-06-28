@@ -373,7 +373,7 @@ class VQVAE(nn.Module):
         else:
             loss = torch.tensor(0.0, device=device)
 
-        return loss
+        return loss/pred_rgb.shape[0]
    
 
 
