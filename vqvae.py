@@ -5,72 +5,6 @@ import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import DataLoader
 from lion_pytorch import Lion
-'''
-# --- 1. Define the Vector Quantization Layer ---
-class VectorQuantizer(nn.Module):
-    def __init__(self, num_embeddings, embedding_dim, commitment_cost=0.25):
-        super().__init__()
-
-        self.num_embeddings = num_embeddings # M in the paper, size of the codebook
-        self.embedding_dim = embedding_dim   # D in the paper, dimension of each embedding vector
-        self.commitment_cost = commitment_cost # beta in the paper, weight for commitment loss
-
-        # Initialize the embeddings (codebook) as a learnable parameter
-        # Shape: (num_embeddings, embedding_dim)
-        self.embeddings = nn.Embedding(self.num_embeddings, self.embedding_dim)
-        # Initialize weights with a uniform distribution for stability
-        self.embeddings.weight.data.uniform_(-1 / self.num_embeddings, 1 / self.num_embeddings)
-
-    def forward(self, z):
-        # z is the output from the encoder: (batch_size, D, H, W, T) -> for 3D CNN, or (B, C, D, H, W) in PyTorch standard
-        # For simplicity, let's assume z is already flattened or reshaped to (batch_size * num_pixels, embedding_dim)
-        # However, a typical VQ-VAE encoder outputs (B, C, D, H, W) for video
-        # We need to rearrange it to (B*D*H*W, C) for direct comparison with embeddings
-        input_shape = z.shape
-        # Flatten input to (batch_size * depth * height * width, embedding_dim)
-        # PyTorch Conv3d outputs (B, C, D, H, W). We need (B*D*H*W, C)
-        # Let's assume z is already like (B, C, D, H, W)
-        flat_input = z.permute(0, 2, 3, 4, 1).contiguous() # Rearrange to (B, D, H, W, C)
-        flat_input = flat_input.view(-1, self.embedding_dim) # Flatten to (N, C) where N = B*D*H*W
-
-        # Calculate distances from input to embeddings (quantization)
-        # (N, 1) - 2 * (N, C) @ (C, M) + (1, M) = (N, M)
-        distances = (torch.sum(flat_input**2, dim=1, keepdim=True)
-                     - 2 * torch.matmul(flat_input, self.embeddings.weight.t())
-                     + torch.sum(self.embeddings.weight**2, dim=1, keepdim=True).t())
-
-        # Find the encoding indices (closest embedding for each input vector)
-        encoding_indices = torch.argmin(distances, dim=1).unsqueeze(1) # (N, 1)
-
-        # Convert indices to one-hot vectors
-        encodings = torch.zeros(encoding_indices.shape[0], self.num_embeddings, device=z.device)
-        encodings.scatter_(1, encoding_indices, 1) # (N, M)
-
-        # Quantize the input: get the actual embedding vectors
-        quantized = torch.matmul(encodings, self.embeddings.weight).view(input_shape)
-
-        # --- Losses ---
-        # Commitment loss: measures how much the encoder output needs to move to commit to an embedding
-        # This part ensures the encoder's output doesn't stray too far from the codebook
-        # (flat_input - quantized.detach()) is for the encoder's output
-        # (quantized - flat_input.detach()) is for updating the embeddings themselves
-        e_latent_loss = F.mse_loss(quantized.detach(), z) # Contribution from encoder
-        q_latent_loss = F.mse_loss(quantized, z.detach()) # Contribution from codebook
-
-        # Total VQ loss
-        loss = q_latent_loss + self.commitment_cost * e_latent_loss
-
-        # Straight-Through Estimator:
-        # In the backward pass, we want gradients to flow through 'quantized' as if it was 'z'
-        # This makes the encoder's outputs directly influence the codebook's selection
-        quantized = z + (quantized - z).detach()
-
-        # Reshape encodings to original input shape (for potential use in prior models)
-        # The encodings are (N, M). If you need it for a prior, you'd reshape it back
-        # to (B, D, H, W, M) or similar. For simplicity, we return the (N, M) encodings.
-        # This isn't directly used by the decoder, but rather the quantized tensor.
-        return quantized, loss, encodings
-'''
 
 
 
@@ -168,64 +102,7 @@ class ResidualBlock3D(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x + self.block(x)
-'''
-# --- 2. Define the Encoder (3D CNN) ---
-class Encoder(nn.Module):
-    def __init__(self, in_channels, num_hiddens):
-        super().__init__()
-        self.conv_1 = nn.Sequential(
-            nn.Conv3d(in_channels, num_hiddens // 2, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm3d(num_hiddens // 2),
-            nn.ELU(inplace=True)
-        )
-        self.conv_2 = nn.Sequential(
-            nn.Conv3d(num_hiddens // 2, num_hiddens, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm3d(num_hiddens),
-            nn.ELU(inplace=True)
-        )
-        self.conv_3 = nn.Sequential(
-            nn.Conv3d(num_hiddens, num_hiddens, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm3d(num_hiddens),
-            nn.ELU(inplace=True)
-        )
 
-        self.res_block_1 = ResidualBlock3D(num_hiddens)
-        self.res_block_2 = ResidualBlock3D(num_hiddens)
-
-    def forward(self, inputs):
-        x = self.conv_1(inputs)
-        x = self.conv_2(x)
-        x = self.conv_3(x)
-        #x = self.res_block_1(x)
-        #x = self.res_block_2(x)
-        return x
-
-# --- 3. Define the Decoder (3D CNN with Transposed Convolutions) ---
-class Decoder(nn.Module):
-    def __init__(self, in_channels, num_hiddens):
-        super().__init__()
-        self.conv_1 = nn.Sequential(
-            nn.Conv3d(in_channels, num_hiddens, kernel_size=3, stride=1, padding=1),
-           # nn.BatchNorm3d(num_hiddens),
-            nn.ELU(inplace=True)
-        )
-        self.res_block_1 = ResidualBlock3D(num_hiddens)
-        self.res_block_2 = ResidualBlock3D(num_hiddens)
-        self.conv_trans_1 = nn.Sequential(
-            nn.ConvTranspose3d(num_hiddens, num_hiddens // 2, kernel_size=4, stride=2, padding=1),
-            #snn.BatchNorm3d(num_hiddens // 2),
-            nn.ELU(inplace=True)
-        )
-        self.conv_trans_2 = nn.ConvTranspose3d(num_hiddens // 2, 3, kernel_size=4, stride=2, padding=1)
-
-    def forward(self, inputs):
-        x = self.conv_1(inputs)
-        #x = self.res_block_1(x)
-        #x = self.res_block_2(x)
-        x = self.conv_trans_1(x)
-        x = torch.sigmoid(self.conv_trans_2(x))
-        return x
-'''
 
 
 
@@ -316,8 +193,9 @@ class VQVAE(nn.Module):
 
         self.encoder = Encoder(3, num_hiddens,)
         self.pre_vq_conv = nn.Conv3d(
-            num_hiddens * 4, embedding_dim, kernel_size=1
-        ) # Maps encoder output to embedding_dim
+            self.encoder.encoder[-1].block[0].out_channels, 
+            embedding_dim, kernel_size=1
+        )
         self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
         #self.vq =VectorQuantizer(num_embeddings, embedding_dim)
         self.decoder = Decoder(embedding_dim, num_hiddens)
