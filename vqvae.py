@@ -477,6 +477,7 @@ class VQVAE(nn.Module):
                     f"Jesus Loss: {jesusLossVal:.4f}, "
                     f"VQ Loss: {vqLossVal:.4f}"
                     )
+        scaler = GradScaler()
         bestVal = jesusLossVal
         for epoch in range(max_epochs):
             self.train()
@@ -485,7 +486,7 @@ class VQVAE(nn.Module):
             vq_loss_epoch = 0.0
             loss_jesus_epoch = 0.0
 
-            scaler = GradScaler()
+            
             cont_batch=0
             n_batch = len(train_loader)
             for batch in train_loader:
@@ -504,7 +505,7 @@ class VQVAE(nn.Module):
                     loss_jesus = self.closest_palette_loss(reconstructions, x,self.palette)*10
                     total_loss = loss_jesus+reconstruction_loss#+# vq_loss
                     #total_loss = loss_jesus#+vq_loss
-                   
+                scaler.scale(total_loss).backward()
                 scaler.step(optimizer)
 
                 # 🟢 4) Atualiza scaler
