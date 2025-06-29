@@ -1,1 +1,10 @@
+# Ignorar checkpoints
+*.pth
 *.pt
+
+# Ignorar logs W&B
+wandb/
+
+# Ignorar caches PyTorch
+__pycache__/
+*.pyc
