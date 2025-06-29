@@ -159,7 +159,7 @@ class ResidualBlock3D(nn.Module):
         super().__init__()
         self.block = nn.Sequential(
             nn.Conv3d(channels, channels//2, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm3d(channels),
+            nn.BatchNorm3d(channels//2),
             nn.ReLU(inplace=True),
             nn.Conv3d(channels//2, channels, kernel_size=1, stride=1),
             nn.BatchNorm3d(channels),
