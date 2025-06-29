@@ -1,0 +1,15 @@
+{"time":"2025-06-29T16:08:47.111741233-03:00","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/home/david/Área de trabalho/projetos/MicroRTSvqvae/wandb/run-20250629_160846-ezclm81v/logs/debug-core.log"}
+{"time":"2025-06-29T16:08:47.423773325-03:00","level":"INFO","msg":"stream: created new stream","id":"ezclm81v"}
+{"time":"2025-06-29T16:08:47.423796668-03:00","level":"INFO","msg":"stream: started","id":"ezclm81v"}
+{"time":"2025-06-29T16:08:47.423829941-03:00","level":"INFO","msg":"writer: Do: started","stream_id":"ezclm81v"}
+{"time":"2025-06-29T16:08:47.423847089-03:00","level":"INFO","msg":"sender: started","stream_id":"ezclm81v"}
+{"time":"2025-06-29T16:08:47.423859967-03:00","level":"INFO","msg":"handler: started","stream_id":"ezclm81v"}
+{"time":"2025-06-29T16:08:47.826464742-03:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-06-29T16:08:49.229978999-03:00","level":"INFO","msg":"stream: closing","id":"ezclm81v"}
+{"time":"2025-06-29T16:08:49.230000621-03:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-06-29T16:08:49.230020398-03:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-06-29T16:08:50.075163105-03:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-06-29T16:08:50.337731962-03:00","level":"INFO","msg":"handler: closed","stream_id":"ezclm81v"}
+{"time":"2025-06-29T16:08:50.337751382-03:00","level":"INFO","msg":"writer: Close: closed","stream_id":"ezclm81v"}
+{"time":"2025-06-29T16:08:50.337767638-03:00","level":"INFO","msg":"sender: closed","stream_id":"ezclm81v"}
+{"time":"2025-06-29T16:08:50.337801764-03:00","level":"INFO","msg":"stream: closed","id":"ezclm81v"}

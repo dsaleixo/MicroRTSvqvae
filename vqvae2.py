@@ -238,11 +238,20 @@ class Decoder(nn.Module):
         return x
 
 # --- 4. Assemble the VQ-VAE Model ---
-class VQVAE(nn.Module):
-    def __init__(self, num_hiddens,
-                num_embeddings, embedding_dim, commitment_cost,device):
+class VQVAE2(nn.Module):
+    def __init__(self,device):
         super().__init__()
+        num_hiddens = 128
 
+        num_embeddings = 256 # Size of the codebook
+        embedding_dim = 64   # Dimension of each embedding vector
+        commitment_cost = 0.25
+        from torch import nn
+        def weights_init_kaiming(m):
+            if isinstance(m, (nn.Conv3d, nn.ConvTranspose3d, nn.Linear)):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
         self.encoder = Encoder(3, num_hiddens,)
         self.pre_vq_conv = nn.Conv3d(num_hiddens, embedding_dim, kernel_size=1, stride=1) # Maps encoder output to embedding_dim
         self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)

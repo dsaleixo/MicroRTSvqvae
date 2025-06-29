@@ -1,0 +1,1 @@
+{"train_loss":0.49,"val_accuracy":0.49,"epoch":1,"_timestamp":1.751224815805159e+09,"_runtime":1.2616090180000001,"_step":2,"video_tensor":{"width":24,"height":24,"_type":"video-file","sha256":"ae6f7110cfd45e5f27b4828da36cf66eb256352b58ba26a4269bebcaa827145e","size":127,"path":"media/videos/video_tensor_2_ae6f7110cfd45e5f27b4.gif"},"_wandb":{"runtime":2}}

@@ -1,0 +1,7 @@
+{"time":"2025-06-29T18:30:47.877367679-03:00","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/home/david/Área de trabalho/projetos/MicroRTSvqvae/wandb/run-20250629_183047-hmwv4faa/logs/debug-core.log"}
+{"time":"2025-06-29T18:30:48.252524704-03:00","level":"INFO","msg":"stream: created new stream","id":"hmwv4faa"}
+{"time":"2025-06-29T18:30:48.252571039-03:00","level":"INFO","msg":"stream: started","id":"hmwv4faa"}
+{"time":"2025-06-29T18:30:48.25258274-03:00","level":"INFO","msg":"writer: Do: started","stream_id":"hmwv4faa"}
+{"time":"2025-06-29T18:30:48.252620885-03:00","level":"INFO","msg":"handler: started","stream_id":"hmwv4faa"}
+{"time":"2025-06-29T18:30:48.25262205-03:00","level":"INFO","msg":"sender: started","stream_id":"hmwv4faa"}
+{"time":"2025-06-29T18:30:48.580036634-03:00","level":"INFO","msg":"Starting system monitor"}

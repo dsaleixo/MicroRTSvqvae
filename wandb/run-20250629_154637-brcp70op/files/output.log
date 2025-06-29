@@ -1,0 +1,67 @@
+Using device: cuda
+[34m[1mwandb[0m: [33mWARNING[0m `format` argument was not provided, defaulting to `gif`. This parameter will be required in v0.20.0, please specify the format explicitly.
+[34m[1mwandb[0m: [32m[41mERROR[0m wandb.Video requires moviepy when passing raw data. Install with "pip install wandb[media]"
+Traceback (most recent call last):
+  File "/home/david/Área de trabalho/projetos/MicroRTSvqvae/train.py", line 56, in <module>
+    "video_tensor": wandb.Video(video_data, fps=4)
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/data_types/video.py", line 170, in __init__
+    printer_asyncio.run_async_with_spinner(
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/lib/printer_asyncio.py", line 46, in run_async_with_spinner
+    return asyncio_compat.run(_loop_run_with_spinner)
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/lib/asyncio_compat.py", line 30, in run
+    return future.result()
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/concurrent/futures/_base.py", line 458, in result
+    return self.__get_result()
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/lib/asyncio_compat.py", line 74, in run
+    return asyncio.run(self._run_or_cancel(fn))
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/lib/asyncio_compat.py", line 98, in _run_or_cancel
+    return fn_task.result()
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/lib/printer_asyncio.py", line 42, in _loop_run_with_spinner
+    res = await asyncio.get_running_loop().run_in_executor(None, func)
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/data_types/video.py", line 178, in encode
+    mpy = util.get_module(
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/util.py", line 254, in get_module
+    raise wandb.Error(required)
+wandb.errors.errors.Error: wandb.Video requires moviepy when passing raw data. Install with "pip install wandb[media]"
+Traceback (most recent call last):
+  File "/home/david/Área de trabalho/projetos/MicroRTSvqvae/train.py", line 56, in <module>
+    "video_tensor": wandb.Video(video_data, fps=4)
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/data_types/video.py", line 170, in __init__
+    printer_asyncio.run_async_with_spinner(
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/lib/printer_asyncio.py", line 46, in run_async_with_spinner
+    return asyncio_compat.run(_loop_run_with_spinner)
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/lib/asyncio_compat.py", line 30, in run
+    return future.result()
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/concurrent/futures/_base.py", line 458, in result
+    return self.__get_result()
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/lib/asyncio_compat.py", line 74, in run
+    return asyncio.run(self._run_or_cancel(fn))
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/lib/asyncio_compat.py", line 98, in _run_or_cancel
+    return fn_task.result()
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/lib/printer_asyncio.py", line 42, in _loop_run_with_spinner
+    res = await asyncio.get_running_loop().run_in_executor(None, func)
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/sdk/data_types/video.py", line 178, in encode
+    mpy = util.get_module(
+  File "/home/david/miniconda3/envs/VQVAE/lib/python3.10/site-packages/wandb/util.py", line 254, in get_module
+    raise wandb.Error(required)
+wandb.errors.errors.Error: wandb.Video requires moviepy when passing raw data. Install with "pip install wandb[media]"

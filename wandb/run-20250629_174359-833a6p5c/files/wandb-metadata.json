@@ -1,0 +1,43 @@
+{
+  "os": "Linux-6.11.0-26-generic-x86_64-with-glibc2.39",
+  "python": "CPython 3.10.16",
+  "startedAt": "2025-06-29T20:43:59.490117Z",
+  "program": "/home/david/Área de trabalho/projetos/MicroRTSvqvae/train.py",
+  "codePath": "train.py",
+  "git": {
+    "remote": "https://github.com/dsaleixo/MicroRTSvqvae.git",
+    "commit": "30c7352edf90b8ce6a3c6e4da730af6a44849532"
+  },
+  "email": "david.aleixo@ufv.br",
+  "root": "/home/david/Área de trabalho/projetos/MicroRTSvqvae",
+  "host": "david-Inspiron-5502",
+  "executable": "/home/david/miniconda3/envs/VQVAE/bin/python",
+  "codePathLocal": "train.py",
+  "cpu_count": 4,
+  "cpu_count_logical": 8,
+  "gpu": "NVIDIA GeForce MX350",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "369575940096",
+      "used": "102054612992"
+    }
+  },
+  "memory": {
+    "total": "33365716992"
+  },
+  "cpu": {
+    "count": 4,
+    "countLogical": 8
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce MX350",
+      "memoryTotal": "2147483648",
+      "cudaCores": 640,
+      "architecture": "Pascal",
+      "uuid": "GPU-63fab5bd-4bcb-3562-d4c5-1a9386cddde9"
+    }
+  ],
+  "cudaVersion": "12.4"
+}

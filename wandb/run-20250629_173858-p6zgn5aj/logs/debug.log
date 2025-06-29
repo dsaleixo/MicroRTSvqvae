@@ -1,0 +1,22 @@
+2025-06-29 17:38:58,841 INFO    MainThread:54847 [wandb_setup.py:_flush():81] Current SDK version is 0.20.1
+2025-06-29 17:38:58,841 INFO    MainThread:54847 [wandb_setup.py:_flush():81] Configure stats pid to 54847
+2025-06-29 17:38:58,841 INFO    MainThread:54847 [wandb_setup.py:_flush():81] Loading settings from /home/david/.config/wandb/settings
+2025-06-29 17:38:58,841 INFO    MainThread:54847 [wandb_setup.py:_flush():81] Loading settings from /home/david/Área de trabalho/projetos/MicroRTSvqvae/wandb/settings
+2025-06-29 17:38:58,841 INFO    MainThread:54847 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2025-06-29 17:38:58,841 INFO    MainThread:54847 [wandb_init.py:setup_run_log_directory():703] Logging user logs to /home/david/Área de trabalho/projetos/MicroRTSvqvae/wandb/run-20250629_173858-p6zgn5aj/logs/debug.log
+2025-06-29 17:38:58,842 INFO    MainThread:54847 [wandb_init.py:setup_run_log_directory():704] Logging internal logs to /home/david/Área de trabalho/projetos/MicroRTSvqvae/wandb/run-20250629_173858-p6zgn5aj/logs/debug-internal.log
+2025-06-29 17:38:58,842 INFO    MainThread:54847 [wandb_init.py:init():831] calling init triggers
+2025-06-29 17:38:58,842 INFO    MainThread:54847 [wandb_init.py:init():836] wandb.init called with sweep_config: {}
+config: {'epochs': 10, 'batch_size': 32, 'learning_rate': 0.001, '_wandb': {}}
+2025-06-29 17:38:58,842 INFO    MainThread:54847 [wandb_init.py:init():872] starting backend
+2025-06-29 17:38:59,047 INFO    MainThread:54847 [wandb_init.py:init():875] sending inform_init request
+2025-06-29 17:38:59,050 INFO    MainThread:54847 [wandb_init.py:init():883] backend started and connected
+2025-06-29 17:38:59,051 INFO    MainThread:54847 [wandb_init.py:init():956] updated telemetry
+2025-06-29 17:38:59,054 INFO    MainThread:54847 [wandb_init.py:init():980] communicating run to backend with 90.0 second timeout
+2025-06-29 17:38:59,867 INFO    MainThread:54847 [wandb_init.py:init():1032] starting run threads in backend
+2025-06-29 17:38:59,962 INFO    MainThread:54847 [wandb_run.py:_console_start():2453] atexit reg
+2025-06-29 17:38:59,963 INFO    MainThread:54847 [wandb_run.py:_redirect():2301] redirect: wrap_raw
+2025-06-29 17:38:59,963 INFO    MainThread:54847 [wandb_run.py:_redirect():2370] Wrapping output streams.
+2025-06-29 17:38:59,963 INFO    MainThread:54847 [wandb_run.py:_redirect():2393] Redirects installed.
+2025-06-29 17:38:59,964 INFO    MainThread:54847 [wandb_init.py:init():1078] run started, returning control to user process
+2025-06-29 17:39:18,277 INFO    MsgRouterThr:54847 [mailbox.py:close():129] [no run ID] Closing mailbox, abandoning 1 handles.
