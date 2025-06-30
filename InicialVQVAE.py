@@ -152,7 +152,7 @@ class InitialVQVAE(nn.Module):
             optimizer,
             mode="min",
             factor=0.5,
-            patience=5,
+            patience=50,
    
         )
 
