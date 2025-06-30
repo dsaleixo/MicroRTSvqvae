@@ -131,6 +131,16 @@ class InitialVQVAE(nn.Module):
 
     def forward(self, x,epoch):
         z = self.encoder(x)
-        quantized, vq_loss, codes,perplexity, used_codes = self.vq(z)
+        
+        if epoch > 10:
+     
+            quantized, vq_loss, codes,perplexity, used_codes = self.vq(z)
+
+        else:
+    
+            quantized = z
+            vq_loss = torch.tensor(0.0, device=x.device)
+            codes = 0
+            perplexity, used_codes =0,0
         out = self.decoder(quantized)
         return out ,vq_loss,codes,perplexity, used_codes 
