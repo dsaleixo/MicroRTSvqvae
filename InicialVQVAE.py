@@ -90,7 +90,7 @@ class InitialVQVAE(nn.Module):
     def __init__(self):
         super(InitialVQVAE, self).__init__()
         num_embeddings = 128
-        embedding_dim: int = 16
+        embedding_dim: int = 32
         self.encoder = nn.Conv3d(
             in_channels=3,
             out_channels=embedding_dim,
@@ -132,7 +132,7 @@ class InitialVQVAE(nn.Module):
     def forward(self, x,epoch):
         z = self.encoder(x)
         
-        if epoch > 10:
+        if epoch > -1:
      
             quantized, vq_loss, codes,perplexity, used_codes = self.vq(z)
 
