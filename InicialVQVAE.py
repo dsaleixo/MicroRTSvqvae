@@ -90,7 +90,7 @@ class InitialVQVAE(nn.Module):
     def __init__(self):
         super(InitialVQVAE, self).__init__()
         num_embeddings = 128
-        embedding_dim: int = 16,
+        embedding_dim: int = 16
         self.encoder = nn.Conv3d(
             in_channels=3,
             out_channels=embedding_dim,
