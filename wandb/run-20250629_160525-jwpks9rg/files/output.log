@@ -1,9 +1,0 @@
-Using device: cuda
-Traceback (most recent call last):
-  File "/home/david/Área de trabalho/projetos/MicroRTSvqvae/train.py", line 52, in <module>
-    carregado = np.load("resultado.npy").permute(1, 0, 2, 3)
-AttributeError: 'numpy.ndarray' object has no attribute 'permute'
-Traceback (most recent call last):
-  File "/home/david/Área de trabalho/projetos/MicroRTSvqvae/train.py", line 52, in <module>
-    carregado = np.load("resultado.npy").permute(1, 0, 2, 3)
-AttributeError: 'numpy.ndarray' object has no attribute 'permute'

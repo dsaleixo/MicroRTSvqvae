@@ -27,20 +27,21 @@ class ReadDatas():
         print(len(arquivos))
         cont=0
         for arq in arquivos:
-                      
-                        cont+=1
-                        print(arq)
-                        loaded_data = np.load('./datas3/'+arq)
-                        shape = loaded_data.shape
-                        #print(shape,len(dados))
-                        aux = [ loaded_data]
-                        for _ in range(size-shape[0]):
-                            aux.append( np.expand_dims(loaded_data[-1].copy(), axis=0))
+                    if cont>100:
+                        break
+                    cont+=1
+                    print(arq)
+                    loaded_data = np.load('./datas3/'+arq)
+                    shape = loaded_data.shape
+                    #print(shape,len(dados))
+                    aux = [ loaded_data]
+                    for _ in range(size-shape[0]):
+                        aux.append( np.expand_dims(loaded_data[-1].copy(), axis=0))
 
-                        loaded_data2  = np.concatenate(aux, axis=0)
-                        loaded_data2 = loaded_data2[0:size,:,:,:]
-                        
-                        dados.append(loaded_data2)
+                    loaded_data2  = np.concatenate(aux, axis=0)
+                    loaded_data2 = loaded_data2[0:size,:,:,:]
+                    
+                    dados.append(loaded_data2)
         total_size = len(dados)  # Suponha que temos 100 amostras
         for i in range(total_size):
             dados[i] = torch.tensor(dados[i],dtype=torch.float).permute(1, 0, 2, 3)

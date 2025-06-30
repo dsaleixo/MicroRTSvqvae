@@ -10,7 +10,7 @@ import os
 
 os.environ["WANDB_API_KEY"] = "e6dd69e5ba37b74ef8d3ef0fa9dd28a33e4eeb6e"
 
-os.environ["WANDB_MODE"] = "dryrun"
+
 import wandb
 
 import moviepy
@@ -27,7 +27,6 @@ palette = torch.tensor([
             ], dtype=torch.float32)
 palette/=255
 
-marchReal= None
 
 
 def closest_palette_loss(pred_rgb, target_rgb, palette):
@@ -104,17 +103,24 @@ def quantize_colors(video: torch.Tensor, ) -> torch.Tensor:
 
     return quantized
 
+def salva(name,out):
+    video_np = (out.permute(1,2,3,0).detach().cpu().numpy() * 255).astype(np.uint8)
+    frames=[]
+    for frame in video_np:
+        frames.append(frame)
+    print(len(frames),frames[0].shape)
+    imageio.mimsave("Gifs/"+name+'.gif', frames, fps=12)
+    wandb.log({name: wandb.Video("Gifs/"+name+'.gif', format="gif")})
+def gerarVideo(model, name,marchReal):
+    model.eval()
+    marchReal=marchReal.to(device)
+    print("saida",marchReal.shape)
+    out=model(marchReal,1000)[0][0]
+    salva(name+"_Pure",out)
 
+    out2 = quantize_colors(out)
+    salva(name+"_Clean",out2)
 
-def gerarVideo(model, name):
-    out=model.eval(marchReal)[0]
-    wandb.log({
-        name+"_Pure": wandb.Video(out, fps=12)
-    })
-    out = quantize_colors(out).permute(1,0,2,3)
-    wandb.log({
-        name+"_Clean": wandb.Video(out, fps=12)
-    })
 
 
 
@@ -131,7 +137,7 @@ def validation(model, val_loader: DataLoader, device='cuda',):
         reconstructions, vq_loss, _,_,_ = model(x,112)
         reconstruction_loss = F.mse_loss(reconstructions, x)
         loss_jesus = closest_palette_loss(reconstructions, x,palette)
-        total_loss = loss_jesus+reconstruction_loss#+# vq_loss
+        total_loss = reconstruction_loss #loss_jesus+
         if vq_loss!=None:
             vq_loss_epoch += vq_loss.item()
         
@@ -144,7 +150,7 @@ def validation(model, val_loader: DataLoader, device='cuda',):
     return total_loss_epoch, recon_loss_epoch,loss_jesus_epoch ,vq_loss_epoch 
 
 
-def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader, device='cuda'):
+def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader,marchReal, device='cuda'):
 
         model.to(device)
         '''
@@ -201,8 +207,8 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 reconstructions, vq_loss, _,perplexity, used_codes = model(x,epoch)
                 reconstruction_loss = F.mse_loss(reconstructions, x)
                 loss_jesus = closest_palette_loss(reconstructions, x,palette)
-                total_loss = loss_jesus+reconstruction_loss#+# vq_loss
-                #total_loss = loss_jesus#+vq_loss
+                #total_loss = loss_jesus+reconstruction_loss#+# vq_loss
+                total_loss = reconstruction_loss#+vq_loss
                    
                 total_loss.backward()
                 #torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
@@ -215,7 +221,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 loss_jesus_epoch += loss_jesus.item()
             scheduler.step(total_loss_epoch)  # Atualiza o lr com o scheduler
             current_lr = scheduler.get_last_lr()[0]
-            totalLossVal, reconLossVal,jesusLossVal,vqLossVal =validation(val_loader)
+            totalLossVal, reconLossVal,jesusLossVal,vqLossVal =validation(model,val_loader,device)
             wandb.log({
               "rl"   :current_lr    
              })
@@ -224,7 +230,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 bestTrain=loss_jesus_epoch
                 torch.save(model.state_dict(), "BestTrainModel.pth")
                 wandb.save("BestTrainModel.pth")
-                gerarVideo(model,"BestTrain")
+                gerarVideo(model,"BestTrain",marchReal)
 
             if bestVal >jesusLossVal and epoch>20:
                 bestVal=jesusLossVal
@@ -232,10 +238,10 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 torch.save(model.state_dict(), f"BestTEstModel{epoch}.pth")
                 wandb.save("BestTEstModelBest.pth")
                 wandb.save(f"BestTEstModel{epoch}.pth")
-                gerarVideo(model,"BestTest")
+                gerarVideo(model,"BestTest",marchReal)
 
             if nextSalve==epoch:
-                 gerarVideo(model,"epoch"+epoch)
+                 gerarVideo(model,"epoch"+str(epoch),marchReal)
                  nextSalve = nextSalve+20
 
             print(epoch,total_loss_epoch,totalLossVal)
@@ -276,23 +282,26 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     palette=palette.to(device)
     import os
-    os.environ["WANDB_MODE"] = "offline"
+
     wandb.init(
     project="VQVAE",
+    name = "Arquitetura inicial"
     config={
+         
+      
         "epochs": 10,
         "batch_size": 32,
         "learning_rate": 0.001
         }
     )
-
+    '''
     frames = []
 
     # Suponha que video_data seja torch tensor (T, C, H, W)
     video_data = torch.rand(12, 3, 64, 64)
 
     # Converter para numpy (T, H, W, C)
-    video_np = (video_data.permute(0,2,3,1).numpy() * 255).astype(np.uint8)
+    video_np = (video_data.numpy() * 255).astype(np.uint8)
 
     for frame in video_np:
         frames.append(frame)
@@ -301,9 +310,9 @@ if __name__ == "__main__":
 
     wandb.log({"meu_video": wandb.Video("video.gif", format="gif")})
     print(f"Using device: {device}")
-    
-    sizeVideo =128
     '''
+    sizeVideo =128
+
     datas = ReadDatas.readDatas(sizeVideo,device)
     print("load complete")
     datas = datas
@@ -314,24 +323,21 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(train_set, batch_size=32)
     val_loader = DataLoader(val_set, batch_size=32, )
-
+ 
     exemplo = np.load("resultado.npy")[:sizeVideo]
 
-    marchReal = torch.tensor(exemplo)
+
+
+
+    marchReal = torch.tensor(exemplo).float()
     
-    video_data = marchReal.squeeze()*255
-    marchReal = marchReal.permute(1,0,3,2)
-    print(video_data.shape)
 
-
-
-    wandb.log({
-        "RealVideo": wandb.Video(video_data, fps=12)
-    })
-
+    marchReal = marchReal.permute(1,0,2,3).unsqueeze(0)
+    salva("RealVideo",marchReal.squeeze())
+    
 
 
     model = VideoAutoencoder().to(device)
-    loopTrain(model, 1000, train_loader, val_loader, device)
-    '''
+    loopTrain(model, 1000, train_loader, val_loader,marchReal, device)
+
     

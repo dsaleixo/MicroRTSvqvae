@@ -1,5 +1,0 @@
-Using device: cuda
-sds (151, 3, 24, 24)
-sdsss torch.Size([3, 151, 24, 24])
-[34m[1mwandb[0m: [33mWARNING[0m `format` argument was not provided, defaulting to `gif`. This parameter will be required in v0.20.0, please specify the format explicitly.
-m[2K[1mwandb[0m: [38;5;178m⣽[0m Encoding video...
