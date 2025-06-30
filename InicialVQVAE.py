@@ -87,26 +87,55 @@ class VectorQuantizerEMA(nn.Module):
 
 
 class InitialVQVAE(nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super(InitialVQVAE, self).__init__()
+
         num_embeddings = 128
-        embedding_dim: int = 32
-        self.encoder = nn.Conv3d(
-            in_channels=3,
-            out_channels=embedding_dim,
-            kernel_size=3,
-            stride=(2,2,2),
-            padding=(2,2,2)
+        embedding_dim = 32
+
+        # Encoder com só uma redução
+        self.encoder = nn.Sequential(
+            nn.Conv3d(
+                in_channels=3,
+                out_channels=16,
+                kernel_size=3,
+                stride=1,        # NÃO reduz
+                padding=1
+            ),
+            nn.ReLU(inplace=True),
+            nn.Conv3d(
+                in_channels=16,
+                out_channels=embedding_dim,
+                kernel_size=3,
+                stride=2,        # REDUZ pela metade
+                padding=1
+            ),
+            nn.ReLU(inplace=True)
         )
-        self.vq = VectorQuantizerEMA(num_embeddings,embedding_dim)
-        self.decoder = nn.ConvTranspose3d(
-            in_channels=embedding_dim,
-            out_channels=3,
-            kernel_size=3,
-            stride=(2,2,2),
-            padding=(2,2,2),
-            output_padding=(1,1,1)  # importante para ajustar o tamanho final
+
+        self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
+
+        # Decoder que recupera resolução
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose3d(
+                in_channels=embedding_dim,
+                out_channels=16,
+                kernel_size=3,
+                stride=2,         # AUMENTA resolução
+                padding=1,
+                output_padding=1
+            ),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose3d(
+                in_channels=16,
+                out_channels=3,
+                kernel_size=3,
+                stride=1,         # MANTÉM resolução
+                padding=1
+            ),
+            nn.ReLU(inplace=True),          # ou ReLU, conforme seus dados
         )
+
     
 
     def getOptimizer(self,):
