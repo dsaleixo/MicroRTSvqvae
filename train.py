@@ -239,9 +239,11 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 wandb.save("BestTEstModelBest.pth")
                 wandb.save(f"BestTEstModel{epoch}.pth")
                 gerarVideo(model,"BestTest",marchReal)
-
+                wandb.log({"Updade":1})
+            else:
+                 wandb.log({"Updade":0})
             if nextSalve==epoch:
-                 gerarVideo(model,"epoch"+str(epoch),marchReal)
+                 gerarVideo(model,"Actual",marchReal)
                  nextSalve = nextSalve+20
 
             print(epoch,total_loss_epoch,totalLossVal)

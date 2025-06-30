@@ -27,8 +27,7 @@ class ReadDatas():
         print(len(arquivos))
         cont=0
         for arq in arquivos:
-                    if cont>100:
-                        break
+
                     cont+=1
                     print(arq)
                     loaded_data = np.load('./datas3/'+arq)
