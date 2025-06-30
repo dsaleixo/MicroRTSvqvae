@@ -9,7 +9,7 @@ import numpy as np
 import os
 os.environ["WANDB_API_KEY"] = "e6dd69e5ba37b74ef8d3ef0fa9dd28a33e4eeb6e"
 
-os.environ["WANDB_MODE"] = "offline"
+os.environ["WANDB_MODE"] = "dryrun"
 import wandb
 from lion_pytorch import Lion
 palette = torch.tensor([
