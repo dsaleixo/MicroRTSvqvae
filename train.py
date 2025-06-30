@@ -8,6 +8,8 @@ from readDatas import ReadDatas
 import numpy as np
 import os
 os.environ["WANDB_API_KEY"] = "e6dd69e5ba37b74ef8d3ef0fa9dd28a33e4eeb6e"
+
+os.environ["WANDB_MODE"] = "offline"
 import wandb
 from lion_pytorch import Lion
 palette = torch.tensor([
@@ -231,6 +233,8 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
             if nextSalve==epoch:
                  gerarVideo(model,"epoch"+epoch)
                  nextSalve = nextSalve+20
+
+            print(epoch,total_loss_epoch,totalLossVal)
             wandb.log({
                 "Train/Total Loss": total_loss_epoch,
                 "Train/Recon Loss": recon_loss_epoch,
