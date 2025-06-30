@@ -40,7 +40,7 @@ class VideoAutoencoder(nn.Module):
             mode="min",
             factor=0.5,
             patience=5,
-            verbose=True
+   
         )
 
         return optimizer, scheduler
