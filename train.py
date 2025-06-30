@@ -271,6 +271,8 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     palette=palette.to(device)
+    import os
+    os.environ["WANDB_MODE"] = "offline"
     wandb.init(
     project="VQVAE",
     config={
