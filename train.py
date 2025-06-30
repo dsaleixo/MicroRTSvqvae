@@ -286,13 +286,24 @@ if __name__ == "__main__":
         }
     )
 
+    frames = []
 
+    # Suponha que video_data seja torch tensor (T, C, H, W)
+    video_data = torch.rand(12, 3, 64, 64)
+
+    # Converter para numpy (T, H, W, C)
+    video_np = (video_data.permute(0,2,3,1).numpy() * 255).astype(np.uint8)
+
+    for frame in video_np:
+        frames.append(frame)
+
+    imageio.mimsave('video.gif', frames, fps=12)
 
  
     print(f"Using device: {device}")
     
     sizeVideo =128
-    
+    '''
     datas = ReadDatas.readDatas(sizeVideo,device)
     print("load complete")
     datas = datas
@@ -309,13 +320,18 @@ if __name__ == "__main__":
     marchReal = torch.tensor(exemplo)
     
     video_data = marchReal.squeeze()*255
-    marchReal = marchReal.permute(1,3,2,0).squeeze()
+    marchReal = marchReal.permute(1,0,3,2)
     print(video_data.shape)
+
+
+
     wandb.log({
         "RealVideo": wandb.Video(video_data, fps=12)
     })
 
+
+
     model = VideoAutoencoder().to(device)
     loopTrain(model, 1000, train_loader, val_loader, device)
-
+    '''
     
