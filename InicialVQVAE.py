@@ -91,20 +91,20 @@ class InitialVQVAE(nn.Module):
         super(InitialVQVAE, self).__init__()
 
         num_embeddings = 128
-        embedding_dim = 64
+        embedding_dim = 16
 
         # Encoder com só uma redução
         self.encoder = nn.Sequential(
             nn.Conv3d(
                 in_channels=3,
-                out_channels=32,
+                out_channels=8,
                 kernel_size=3,
                 stride=1,        # NÃO reduz
                 padding=1
             ),
             nn.ReLU(inplace=True),
             nn.Conv3d(
-                in_channels=32,
+                in_channels=8,
                 out_channels=embedding_dim,
                 kernel_size=3,
                 stride=2,        # REDUZ pela metade
@@ -119,7 +119,7 @@ class InitialVQVAE(nn.Module):
         self.decoder = nn.Sequential(
             nn.ConvTranspose3d(
                 in_channels=embedding_dim,
-                out_channels=32,
+                out_channels=8,
                 kernel_size=3,
                 stride=2,         # AUMENTA resolução
                 padding=1,
@@ -127,7 +127,7 @@ class InitialVQVAE(nn.Module):
             ),
             nn.ReLU(inplace=True),
             nn.ConvTranspose3d(
-                in_channels=32,
+                in_channels=8,
                 out_channels=3,
                 kernel_size=3,
                 stride=1,         # MANTÉM resolução
@@ -144,7 +144,7 @@ class InitialVQVAE(nn.Module):
         """
         optimizer = torch.optim.Adam(
             self.parameters(),
-            lr=1e-3,
+            lr=1e-4,
             weight_decay=0
         )
 
