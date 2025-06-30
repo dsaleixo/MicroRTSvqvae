@@ -3,7 +3,7 @@
 *.pt
 
 # Ignorar logs W&B
-wandb/
+wandb/*
 
 # Ignorar caches PyTorch
 __pycache__/
