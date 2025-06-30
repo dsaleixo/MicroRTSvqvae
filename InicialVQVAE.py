@@ -142,9 +142,11 @@ class InitialVQVAE(nn.Module):
         """
         Retorna optimizer e scheduler
         """
-        optimizer = torch.optim.Adam(
+        from lion_pytorch import Lion
+
+        optimizer = Lion(
             self.parameters(),
-            lr=1e-4,
+            lr=1e-3,          # cuidado! normalmente mais alto que Adam
             weight_decay=0
         )
 
@@ -152,8 +154,8 @@ class InitialVQVAE(nn.Module):
             optimizer,
             mode="min",
             factor=0.5,
-            patience=50,
-   
+            patience=5,
+            min_lr=1e-6
         )
 
         return optimizer, scheduler
