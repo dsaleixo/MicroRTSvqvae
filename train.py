@@ -28,7 +28,7 @@ palette = torch.tensor([
 palette/=255
 
 
-
+'''
 def closest_palette_loss(pred_rgb, target_rgb, palette):
         """
         pred_rgb: (B, 3, T, H, W) — saída contínua da rede, valores em [0, 1]
@@ -65,7 +65,49 @@ def closest_palette_loss(pred_rgb, target_rgb, palette):
         else:
             loss = torch.tensor(0.0, device=device)
 
-        return (loss/pred_rgb.shape[0])*10
+        return (loss)
+'''
+
+
+
+
+def closest_palette_loss(pred_rgb, target_rgb, palette):
+    """
+    pred_rgb: (B, 3, T, H, W)
+    target_rgb: (B, 3, T, H, W)
+    palette: (7, 3)
+    """
+    device = pred_rgb.device
+
+    B, _, T, H, W = pred_rgb.shape
+    N = B * T * H * W
+
+    # Flatten (N,3)
+    pred_flat = pred_rgb.permute(0,2,3,4,1).reshape(N,3)
+    target_flat = target_rgb.permute(0,2,3,4,1).reshape(N,3)
+
+    # Distâncias da predição para todas cores da paleta
+    pred_dists = torch.cdist(pred_flat, palette)   # (N,7)
+    pred_closest_idx = torch.argmin(pred_dists, dim=1)  # (N,)
+
+    # Distâncias do target para todas cores da paleta
+    target_dists = torch.cdist(target_flat, palette)  # (N,7)
+    target_closest_idx = torch.argmin(target_dists, dim=1)  # (N,)
+
+    # Máscara de erro
+    mask_wrong = pred_closest_idx != target_closest_idx
+
+    # Distância entre a predição e a cor-alvo da paleta
+    target_palette_colors = palette[target_closest_idx]  # (N,3)
+    penalization_dist = torch.norm(pred_flat - target_palette_colors, dim=1)
+
+    if mask_wrong.any():
+        loss = penalization_dist[mask_wrong].mean()
+    else:
+        loss = torch.tensor(0.0, device=device)
+
+    return loss 
+
 
 def baseline(model, val_loader: DataLoader, device='cuda'): 
         model.eval()
