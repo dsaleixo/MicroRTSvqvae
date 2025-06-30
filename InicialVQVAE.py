@@ -24,7 +24,7 @@ class VectorQuantizerEMA(nn.Module):
         self.epsilon = epsilon
 
         # Codebook: shape (M, D)
-        self.register_buffer("embedding", F.normalize(torch.randn(num_embeddings, embedding_dim), dim=1) * 0.1)
+        self.register_buffer("embedding", F.normalize(torch.randn(num_embeddings, embedding_dim), dim=1) * 2)
         self.register_buffer("cluster_size", torch.ones(num_embeddings))
         self.register_buffer("embedding_avg", self.embedding.clone())
 
