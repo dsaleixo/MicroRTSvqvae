@@ -299,7 +299,7 @@ if __name__ == "__main__":
 
     imageio.mimsave('video.gif', frames, fps=12)
 
- 
+    wandb.log({"meu_video": wandb.Video("video.gif", format="gif")})
     print(f"Using device: {device}")
     
     sizeVideo =128
