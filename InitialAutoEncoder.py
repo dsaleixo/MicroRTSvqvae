@@ -7,21 +7,27 @@ class VideoAutoencoder(nn.Module):
     def __init__(self):
         super(VideoAutoencoder, self).__init__()
         
-        self.encoder = nn.Conv3d(
-            in_channels=3,
-            out_channels=16,
-            kernel_size=3,
-            stride=(2,2,2),
-            padding=(2,2,2)
+        self.encoder = nn.Sequential(
+            nn.Conv3d(
+                in_channels=3,
+                out_channels=16,
+                kernel_size=3,
+                stride=(2, 2, 2),
+                padding=(2, 2, 2)
+            ),
+            nn.ReLU(inplace=True)
         )
-        
-        self.decoder = nn.ConvTranspose3d(
-            in_channels=16,
-            out_channels=3,
-            kernel_size=3,
-            stride=(2,2,2),
-            padding=(2,2,2),
-            output_padding=(1,1,1)  # importante para ajustar o tamanho final
+
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose3d(
+                in_channels=16,
+                out_channels=3,
+                kernel_size=3,
+                stride=(2, 2, 2),
+                padding=(2, 2, 2),
+                output_padding=(1, 1, 1)
+            ),
+            nn.Sigmoid()  # ou nn.ReLU(), depende se você quer saída normalizada
         )
     
 
