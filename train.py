@@ -309,7 +309,7 @@ if __name__ == "__main__":
     marchReal = torch.tensor(exemplo)
     
     video_data = marchReal.squeeze()*255
-    marchReal = marchReal.permute(1,0,2,3).squeeze()
+    marchReal = marchReal.permute(1,3,2,0).squeeze()
     print(video_data.shape)
     wandb.log({
         "RealVideo": wandb.Video(video_data, fps=12)
