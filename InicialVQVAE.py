@@ -131,6 +131,6 @@ class InitialVQVAE(nn.Module):
 
     def forward(self, x,epoch):
         z = self.encoder(x)
-        quantized, vq_loss, codes,perplexity, used_codes = self.quantizer(z)
+        quantized, vq_loss, codes,perplexity, used_codes = self.vq(z)
         out = self.decoder(quantized)
         return out ,vq_loss,codes,perplexity, used_codes 
