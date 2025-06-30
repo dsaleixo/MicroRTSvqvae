@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import random_split
 import torch.nn.functional as F
+from InicialVQVAE import InitialVQVAE
 from InitialAutoEncoder import VideoAutoencoder
 from readDatas import ReadDatas
 import numpy as np
@@ -380,8 +381,9 @@ if __name__ == "__main__":
     salva("RealVideo",marchReal.squeeze())
     
 
-
-    model = VideoAutoencoder().to(device)
+    
+    model = InitialVQVAE().to(device)
+ 
     loopTrain(model, 1000, train_loader, val_loader,marchReal, device)
 
     
