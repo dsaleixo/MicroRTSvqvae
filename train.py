@@ -288,6 +288,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
             if nextSalve==epoch:
                  gerarVideo(model,"Actual",marchReal)
                  model.vq.printCodeBook()
+                 model.comparaEncoderQuant(marchReal)
                  nextSalve = nextSalve+20
 
             print(epoch,total_loss_epoch,totalLossVal)

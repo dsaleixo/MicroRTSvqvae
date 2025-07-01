@@ -142,8 +142,21 @@ class InitialVQVAE(nn.Module):
             nn.ReLU(inplace=True),          
         )
 
-    
+    def comparaEncoderQuant(self,x):
+        self.eval()
+        z = self.encoder(x)
 
+        flat_input = z.permute(0, 2, 3, 4, 1).contiguous().view(-1, self.embedding_dim)  # (N, D)
+        quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
+        flat_quantized = quantized.permute(0, 2, 3, 4, 1).contiguous().view(-1, self.embedding_dim)  # (N, D)
+        n = flat_quantized.shape[0]
+        print("analise ",n)
+        for i in range(n):
+                print(i,flat_quantized[i])
+                print(i,flat_input[i])
+                print()
+
+        print("fim")
     def getOptimizer(self,):
  
         from lion_pytorch import Lion
