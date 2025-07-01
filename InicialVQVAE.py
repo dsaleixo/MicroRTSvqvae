@@ -139,7 +139,7 @@ class InitialVQVAE(nn.Module):
                 kernel_size=3,
                 stride=1,        
                 padding=1
-            ),nn.BatchNorm3d(num_features=self.embedding_dim),
+            ),
             nn.ReLU(inplace=True),          
         )
 
