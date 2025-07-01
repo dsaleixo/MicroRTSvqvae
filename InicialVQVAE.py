@@ -89,53 +89,49 @@ class VectorQuantizerEMA(nn.Module):
 class InitialVQVAE(nn.Module):
     def __init__(self) -> None:
         super(InitialVQVAE, self).__init__()
-
-        num_embeddings = 128
-        embedding_dim = 8
-
-        # Encoder com só uma redução
+        num_embeddings = 64
+        embedding_dim = 16
         self.encoder = nn.Sequential(
             nn.Conv3d(
                 in_channels=3,
-                out_channels=4,
+                out_channels=8,
                 kernel_size=3,
-                stride=1,        # NÃO reduz
-                padding=1
+                stride=1,        
             ),
             nn.ReLU(inplace=True),
             nn.Conv3d(
-                in_channels=4,
+                in_channels=8,
                 out_channels=embedding_dim,
                 kernel_size=3,
-                stride=2,        # REDUZ pela metade
+                stride=2,        
                 padding=1
             ),
             nn.ReLU(inplace=True)
         )
-
         self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
-
-        # Decoder que recupera resolução
         self.decoder = nn.Sequential(
-            nn.ConvTranspose3d(
-                in_channels=embedding_dim,
-                out_channels=4,
-                kernel_size=3,
-                stride=2,         # AUMENTA resolução
-                padding=1,
-                output_padding=1
+            nn.Upsample(
+                scale_factor=2,
+                mode="trilinear",
+                align_corners=False
             ),
-            nn.ReLU(inplace=True),
-            nn.ConvTranspose3d(
-                in_channels=4,
-                out_channels=3,
+            nn.Conv3d(
+                in_channels=embedding_dim,
+                out_channels=8,
                 kernel_size=3,
-                stride=1,         # MANTÉM resolução
+                stride=1,
                 padding=1
             ),
-            nn.ReLU(inplace=True),          # ou ReLU, conforme seus dados
+            nn.ReLU(inplace=True),
+            nn.Conv3d(
+                in_channels=8,
+                out_channels=3,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            ),
+            nn.Sigmoid()  # Ou ReLU, conforme seu problema
         )
-
     
 
     def getOptimizer(self,):
