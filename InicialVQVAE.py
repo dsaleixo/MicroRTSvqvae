@@ -163,7 +163,7 @@ class InitialVQVAE(nn.Module):
     def forward(self, x,epoch):
         z = self.encoder(x)
         
-        if epoch > 200:
+        if epoch >=0:
      
             quantized, vq_loss, codes,perplexity, used_codes = self.vq(z)
 
