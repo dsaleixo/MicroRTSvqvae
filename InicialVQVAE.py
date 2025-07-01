@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 
 class VectorQuantizerEMA(nn.Module):
-    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.9, epsilon: float = 1e-5):
+    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.99, epsilon: float = 1e-5):
         """
         VQ-VAE codebook with Exponential Moving Average (EMA) updates.
 
@@ -59,7 +59,7 @@ class VectorQuantizerEMA(nn.Module):
         used_codes = (self.cluster_size > 1e-5).sum().float() / self.num_embeddings
 
         # Atualização EMA (somente se treinando)
-        if self.training and False:
+        if self.training :
             with torch.no_grad():
                 new_cluster_size = encodings.sum(0)  # (M,)
                 self.cluster_size.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
