@@ -101,8 +101,8 @@ class VectorQuantizerEMA(nn.Module):
 class InitialVQVAE(nn.Module):
     def __init__(self) -> None:
         super(InitialVQVAE, self).__init__()
-        num_embeddings = 128
-        embedding_dim = 16
+        self.num_embeddings = 128
+        self.embedding_dim = 16
         self.encoder = nn.Sequential(
             nn.Conv3d(
                 in_channels=3,
@@ -114,17 +114,17 @@ class InitialVQVAE(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv3d(
                 in_channels=8,
-                out_channels=embedding_dim,
+                out_channels=self.embedding_dim,
                 kernel_size=3,
                 stride=2,        
                 padding=1
             ),
             nn.ReLU(inplace=True)
         )
-        self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
+        self.vq = VectorQuantizerEMA(self.num_embeddings, self.embedding_dim)
         self.decoder = nn.Sequential(
             nn.ConvTranspose3d(
-                in_channels=embedding_dim,
+                in_channels=self.embedding_dim,
                 out_channels=8,
                 kernel_size=3,
                 stride=2,        
