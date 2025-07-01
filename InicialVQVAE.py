@@ -86,6 +86,41 @@ class VectorQuantizerEMA(nn.Module):
 
 
 
+class Decoder(nn.Module):
+    def __init__(self, embedding_dim: int):
+        super().__init__()
+        self.conv1 = nn.Conv3d(
+            in_channels=embedding_dim,
+            out_channels=8,
+            kernel_size=3,
+            stride=1,
+            padding=1
+        )
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv3d(
+            in_channels=8,
+            out_channels=3,
+            kernel_size=3,
+            stride=1,
+            padding=1
+        )
+        self.activation = nn.Sigmoid()  # ou ReLU conforme seu caso
+
+    def forward(self, x: torch.Tensor, target_size: tuple[int, int, int]) -> torch.Tensor:
+        # Upsample até o tamanho desejado
+        x = nn.functional.interpolate(
+            x,
+            size=target_size,
+            mode="trilinear",
+            align_corners=False
+        )
+        x = self.conv1(x)
+        x = self.relu(x)
+        x = self.conv2(x)
+        x = self.activation(x)
+        return x
+
+
 class InitialVQVAE(nn.Module):
     def __init__(self) -> None:
         super(InitialVQVAE, self).__init__()
@@ -109,29 +144,7 @@ class InitialVQVAE(nn.Module):
             nn.ReLU(inplace=True)
         )
         self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
-        self.decoder = nn.Sequential(
-            nn.Upsample(
-                scale_factor=2,
-                mode="trilinear",
-                align_corners=False
-            ),
-            nn.Conv3d(
-                in_channels=embedding_dim,
-                out_channels=8,
-                kernel_size=3,
-                stride=1,
-                padding=2
-            ),
-            nn.ReLU(inplace=True),
-            nn.Conv3d(
-                in_channels=8,
-                out_channels=3,
-                kernel_size=3,
-                stride=1,
-                padding=1
-            ),
-            nn.Sigmoid()  # Ou ReLU, conforme seu problema
-        )
+        self.decoder = Decoder(embedding_dim)
     
 
     def getOptimizer(self,):
@@ -169,5 +182,7 @@ class InitialVQVAE(nn.Module):
             vq_loss = torch.tensor(0.0, device=x.device)
             codes = 0
             perplexity, used_codes =0,0
-        out = self.decoder(quantized)
+     
+        target_size = x.shape[2:]  # (D, H, W)
+        out = self.decoder(quantized, target_size)
         return out ,vq_loss,codes,perplexity, used_codes 
