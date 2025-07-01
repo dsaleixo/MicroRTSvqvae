@@ -111,7 +111,7 @@ class InitialVQVAE(nn.Module):
                 stride=1,        # 🔹 Mantém resolução
                 padding=1
             ),
-            nn.ReLU(inplace=True)
+            nn.Sigmoid(inplace=True)
         )
 
         self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
