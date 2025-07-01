@@ -384,6 +384,6 @@ if __name__ == "__main__":
     
     model = InitialVQVAE().to(device)
  
-    loopTrain(model, 1000, train_loader, val_loader,marchReal, device)
+    loopTrain(model, 10000, train_loader, val_loader,marchReal, device)
 
     

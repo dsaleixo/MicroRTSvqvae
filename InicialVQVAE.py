@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 
 class VectorQuantizerEMA(nn.Module):
-    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.9, epsilon: float = 1e-6):
+    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.7, epsilon: float = 1e-6):
         """
         VQ-VAE codebook with Exponential Moving Average (EMA) updates.
 
@@ -166,15 +166,15 @@ class InitialVQVAE(nn.Module):
         quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
 
         if epoch < 50:
-            alpha = epoch / 50.0  # cresce linearmente de 0 a 1 entre epoch 0 e 20
+            alpha = epoch / 50.0  
             z_mix = (1 - alpha) * z + alpha * quantized
-            # Para não gerar perda de quantização antes da época 20, você pode optar por:
+     
             vq_loss = torch.tensor(0.0, device=x.device)
             codes = 0
             perplexity = 0.0
             used_codes = 0
         else:
-            z_mix = quantized  # após epoch 20, usa quantized direto
+            z_mix = quantized  
 
         out = self.decoder(z_mix)
         return out ,vq_loss,codes,perplexity, used_codes 
