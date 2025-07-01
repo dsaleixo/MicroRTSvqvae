@@ -88,19 +88,18 @@ class VectorQuantizerEMA(nn.Module):
 
 class InitialVQVAE(nn.Module):
     def __init__(self) -> None:
-     
         super(InitialVQVAE, self).__init__()
 
         num_embeddings = 128
         embedding_dim = 16
 
-        # Encoder com a PRIMEIRA camada reduzindo
+        # Encoder com só uma redução
         self.encoder = nn.Sequential(
             nn.Conv3d(
                 in_channels=3,
                 out_channels=8,
                 kernel_size=3,
-                stride=2,        # 🔹 Reduz pela metade
+                stride=1,        # NÃO reduz
                 padding=1
             ),
             nn.ReLU(inplace=True),
@@ -108,21 +107,21 @@ class InitialVQVAE(nn.Module):
                 in_channels=8,
                 out_channels=embedding_dim,
                 kernel_size=3,
-                stride=1,        # 🔹 Mantém resolução
+                stride=2,        # REDUZ pela metade
                 padding=1
             ),
-            nn.Sigmoid()
+            nn.ReLU(inplace=True)
         )
 
         self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
 
-        # Decoder recuperando resolução
+        # Decoder que recupera resolução
         self.decoder = nn.Sequential(
             nn.ConvTranspose3d(
                 in_channels=embedding_dim,
                 out_channels=8,
                 kernel_size=3,
-                stride=2,         # 🔹 Recupera resolução
+                stride=2,         # AUMENTA resolução
                 padding=1,
                 output_padding=1
             ),
@@ -131,11 +130,12 @@ class InitialVQVAE(nn.Module):
                 in_channels=8,
                 out_channels=3,
                 kernel_size=3,
-                stride=1,         # 🔹 Mantém resolução
+                stride=1,         # MANTÉM resolução
                 padding=1
             ),
-            nn.Sigmoid()          # Ou ReLU, conforme seu dataset
+            nn.ReLU(inplace=True),          # ou ReLU, conforme seus dados
         )
+
     
 
     def getOptimizer(self,):
@@ -147,7 +147,7 @@ class InitialVQVAE(nn.Module):
         optimizer = Lion(
             self.parameters(),
             lr=1e-3,          # cuidado! normalmente mais alto que Adam
-            weight_decay=0.001
+            weight_decay=0.0001
         )
 
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
