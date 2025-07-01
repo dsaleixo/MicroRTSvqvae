@@ -269,13 +269,13 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
               "rl"   :current_lr    
              })
 
-            if bestTrain>loss_jesus_epoch and epoch>20:
+            if bestTrain>loss_jesus_epoch and epoch>50:
                 bestTrain=loss_jesus_epoch
                 torch.save(model.state_dict(), "BestTrainModel.pth")
                 wandb.save("BestTrainModel.pth")
                 gerarVideo(model,"BestTrain",marchReal)
 
-            if bestVal >jesusLossVal and epoch>20:
+            if bestVal >jesusLossVal and epoch>50:
                 bestVal=jesusLossVal
                 torch.save(model.state_dict(), f"BestTEstModelBest.pth")
                 torch.save(model.state_dict(), f"BestTEstModel{epoch}.pth")

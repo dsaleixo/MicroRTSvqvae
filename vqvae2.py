@@ -526,11 +526,11 @@ class VQVAE2(nn.Module):
             with open('./saida42.txt', 'a') as f:
                     print(f"rl {current_lr}", file=f)
                     print(f"rl {current_lr}")
-            if bestTrain>loss_jesus_epoch and epoch>20:
+            if bestTrain>loss_jesus_epoch and epoch>50:
                 bestTrain=loss_jesus_epoch
                 torch.save(self.state_dict(), "BestTrainModel.pth")
 
-            if bestVal >jesusLossVal and epoch>20:
+            if bestVal >jesusLossVal and epoch>50:
                 with open('./saida42.txt', 'a') as f:
                     print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxUpdateXXXXXXXXXXXXXXXXXxx", file=f)
                     print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxUpdateXXXXXXXXXXXXXXXXXxx")
