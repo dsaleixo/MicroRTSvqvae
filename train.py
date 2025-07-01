@@ -28,7 +28,7 @@ palette = torch.tensor([
             ], dtype=torch.float32)
 palette/=255
 
-
+print(palette)
 '''
 def closest_palette_loss(pred_rgb, target_rgb, palette):
         """
