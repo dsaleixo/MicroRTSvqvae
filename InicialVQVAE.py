@@ -59,7 +59,7 @@ class VectorQuantizerEMA(nn.Module):
         used_codes = (self.cluster_size > 1e-5).sum().float() / self.num_embeddings
 
         # Atualização EMA (somente se treinando)
-        if self.training:
+        if self.training and False:
             with torch.no_grad():
                 new_cluster_size = encodings.sum(0)  # (M,)
                 self.cluster_size.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
