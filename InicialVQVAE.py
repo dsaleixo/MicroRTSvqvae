@@ -67,11 +67,8 @@ class VectorQuantizerEMA(nn.Module):
                 embed_sum = encodings.T @ flat_input  # (M, D)
                 self.embedding_avg.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
 
-                # Normalização com segurança numérica
-                n = self.cluster_size.sum()
-                cluster_size = ((self.cluster_size + self.epsilon) / (n + self.num_embeddings * self.epsilon)) * n
-
-                self.embedding.copy_(self.embedding_avg / (cluster_size.unsqueeze(1) + self.epsilon))
+               
+                self.embedding.copy_(self.embedding_avg / (self.cluster_size.unsqueeze(1) + self.epsilon))
 
         # Estimador Straight-Through
         quantized_st = z + (quantized - z).detach()
@@ -101,7 +98,7 @@ class VectorQuantizerEMA(nn.Module):
 class InitialVQVAE(nn.Module):
     def __init__(self) -> None:
         super(InitialVQVAE, self).__init__()
-        self.num_embeddings = 128
+        self.num_embeddings = 32
         self.embedding_dim = 16
         self.encoder = nn.Sequential(
             nn.Conv3d(
@@ -166,7 +163,7 @@ class InitialVQVAE(nn.Module):
       
         optimizer = Lion(
             self.parameters(),
-            lr=1e-4,          
+            lr=1e-5,          
             weight_decay=1e-5  
         )
         from torch.optim.lr_scheduler import CyclicLR
@@ -174,7 +171,7 @@ class InitialVQVAE(nn.Module):
         scheduler = CyclicLR(
             optimizer,
             base_lr=1e-5,         
-            max_lr=1e-3,          
+            max_lr=1e-4,          
             step_size_up=1000,   
             step_size_down=1000,  
             mode="triangular2",
