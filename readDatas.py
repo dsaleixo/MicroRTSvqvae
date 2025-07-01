@@ -43,6 +43,9 @@ class ReadDatas():
                     dados.append(loaded_data2)
         total_size = len(dados)  # Suponha que temos 100 amostras
         for i in range(total_size):
+            if i==0: 
+                  print("dados")
+                  print(dados[i][0])
             dados[i] = torch.tensor(dados[i],dtype=torch.float).permute(1, 0, 2, 3)
         return dados
 
