@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 
 class VectorQuantizerEMA(nn.Module):
-    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.9, epsilon: float = 1e-6):
+    def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.9, epsilon: float = 1e-5):
         """
         VQ-VAE codebook with Exponential Moving Average (EMA) updates.
 
@@ -85,6 +85,12 @@ class VectorQuantizerEMA(nn.Module):
         return quantized_st, loss, encoding_indices, perplexity, used_codes
 
 
+    def printCodeBook(self):
+        print("\nCodeBook")
+        for i in range(self.num_embeddings):
+            print(i, self.embedding[i])
+        print()
+
 
 class InitialVQVAE(nn.Module):
     def __init__(self) -> None:
@@ -133,25 +139,23 @@ class InitialVQVAE(nn.Module):
     
 
     def getOptimizer(self,):
-        """
-        Retorna optimizer e scheduler
-        """
+ 
         from lion_pytorch import Lion
 
-        # Lion optimizer com regularização pequena
+      
         optimizer = Lion(
             self.parameters(),
-            lr=1e-4,           # será controlado pelo scheduler
-            weight_decay=1e-5  # regularização pequena
+            lr=1e-4,          
+            weight_decay=1e-5  
         )
         from torch.optim.lr_scheduler import CyclicLR
-        # CyclicLR scheduler
+      
         scheduler = CyclicLR(
             optimizer,
-            base_lr=1e-5,         # menor learning rate
-            max_lr=1e-3,          # maior learning rate
-            step_size_up=1000,    # passos subindo
-            step_size_down=1000,  # passos descendo
+            base_lr=1e-5,         
+            max_lr=1e-3,          
+            step_size_up=1000,   
+            step_size_down=1000,  
             mode="triangular2",
             cycle_momentum=False
         )

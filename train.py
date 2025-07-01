@@ -254,7 +254,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 #total_loss = reconstruction_loss#+vq_loss
                    
                 total_loss.backward()
-                #torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 optimizer.step()
                 if vq_loss!=None:
                     vq_loss_epoch += vq_loss.item()
@@ -287,6 +287,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                  wandb.log({"Updade":0})
             if nextSalve==epoch:
                  gerarVideo(model,"Actual",marchReal)
+                 model.vq.printCodeBook()
                  nextSalve = nextSalve+20
 
             print(epoch,total_loss_epoch,totalLossVal)
@@ -330,7 +331,7 @@ if __name__ == "__main__":
 
     wandb.init(
     project="VQVAE",
-    name = "ArquiteturaVQVAEFinal10",
+    name = "ArquiteturaVQVAEFinal20",
     config={
          
       
