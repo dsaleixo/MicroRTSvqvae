@@ -120,7 +120,7 @@ class InitialVQVAE(nn.Module):
                 out_channels=8,
                 kernel_size=3,
                 stride=1,
-                padding=1
+                padding=2
             ),
             nn.ReLU(inplace=True),
             nn.Conv3d(
