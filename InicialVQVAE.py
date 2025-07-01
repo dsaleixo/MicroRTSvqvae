@@ -86,45 +86,10 @@ class VectorQuantizerEMA(nn.Module):
 
 
 
-class Decoder(nn.Module):
-    def __init__(self, embedding_dim: int):
-        super().__init__()
-        self.conv1 = nn.Conv3d(
-            in_channels=embedding_dim,
-            out_channels=8,
-            kernel_size=3,
-            stride=1,
-            padding=1
-        )
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv3d(
-            in_channels=8,
-            out_channels=3,
-            kernel_size=3,
-            stride=1,
-            padding=1
-        )
-        self.activation = nn.Sigmoid()  # ou ReLU conforme seu caso
-
-    def forward(self, x: torch.Tensor, target_size: tuple[int, int, int]) -> torch.Tensor:
-        # Upsample até o tamanho desejado
-        x = nn.functional.interpolate(
-            x,
-            size=target_size,
-            mode="trilinear",
-            align_corners=False
-        )
-        x = self.conv1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        x = self.activation(x)
-        return x
-
-
 class InitialVQVAE(nn.Module):
     def __init__(self) -> None:
         super(InitialVQVAE, self).__init__()
-        num_embeddings = 64
+        num_embeddings = 128
         embedding_dim = 16
         self.encoder = nn.Sequential(
             nn.Conv3d(
@@ -144,7 +109,26 @@ class InitialVQVAE(nn.Module):
             nn.ReLU(inplace=True)
         )
         self.vq = VectorQuantizerEMA(num_embeddings, embedding_dim)
-        self.decoder = Decoder(embedding_dim)
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose3d(
+                in_channels=embedding_dim,
+                out_channels=8,
+                kernel_size=3,
+                stride=2,        
+                padding=1,
+                output_padding=1
+            ),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose3d(
+                in_channels=8,
+                out_channels=3,
+                kernel_size=3,
+                stride=1,        
+                padding=1
+            ),
+            nn.ReLU(inplace=True),          
+        )
+
     
 
     def getOptimizer(self,):
@@ -172,17 +156,18 @@ class InitialVQVAE(nn.Module):
     def forward(self, x,epoch):
         z = self.encoder(x)
         
-        if epoch >=2000:
-     
-            quantized, vq_loss, codes,perplexity, used_codes = self.vq(z)
+        quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
 
-        else:
-    
-            quantized = z
+        if epoch < 20:
+            alpha = epoch / 20.0  # cresce linearmente de 0 a 1 entre epoch 0 e 20
+            z_mix = (1 - alpha) * z + alpha * quantized
+            # Para não gerar perda de quantização antes da época 20, você pode optar por:
             vq_loss = torch.tensor(0.0, device=x.device)
             codes = 0
-            perplexity, used_codes =0,0
-     
-        target_size = x.shape[2:]  # (D, H, W)
-        out = self.decoder(quantized, target_size)
+            perplexity = 0.0
+            used_codes = 0
+        else:
+            z_mix = quantized  # após epoch 20, usa quantized direto
+
+        out = self.decoder(z_mix)
         return out ,vq_loss,codes,perplexity, used_codes 
