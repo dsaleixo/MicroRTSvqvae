@@ -118,7 +118,7 @@ class InitialVQVAE(nn.Module):
                 padding=1
             ),
             nn.BatchNorm3d(num_features=self.embedding_dim),
-            nn.ReLU(inplace=True),
+            nn.Tanh(),
             
         )
         self.vq = VectorQuantizerEMA(self.num_embeddings, self.embedding_dim)
@@ -140,7 +140,7 @@ class InitialVQVAE(nn.Module):
                 stride=1,        
                 padding=1
             ),
-            nn.ReLU(inplace=True),          
+            nn.Sigmoid(inplace=True),          
         )
 
     def comparaEncoderQuant(self,x):
