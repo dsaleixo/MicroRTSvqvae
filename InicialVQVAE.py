@@ -116,7 +116,8 @@ class InitialVQVAE(nn.Module):
                 stride=2,        
                 padding=1
             ),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
+            nn.BatchNorm3d(num_features=self.embedding_dim)
         )
         self.vq = VectorQuantizerEMA(self.num_embeddings, self.embedding_dim)
         self.decoder = nn.Sequential(
