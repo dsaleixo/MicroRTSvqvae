@@ -147,7 +147,7 @@ class InitialVQVAE(nn.Module):
         optimizer = Lion(
             self.parameters(),
             lr=1e-3,          # cuidado! normalmente mais alto que Adam
-            weight_decay=0
+            weight_decay=0.001
         )
 
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
