@@ -159,7 +159,8 @@ class InitialVQVAE(nn.Module):
                     print(i,flat_input[i])
                     print()
 
-        print("fim")
+        s= set(codes)
+        print("fim",len(s))
     def getOptimizer(self,):
  
         from lion_pytorch import Lion
@@ -175,7 +176,7 @@ class InitialVQVAE(nn.Module):
         scheduler = CyclicLR(
             optimizer,
             base_lr=1e-5,         
-            max_lr=1e-3,          
+            max_lr=1e-2,          
             step_size_up=1000,   
             step_size_down=1000,  
             mode="triangular2",
