@@ -140,7 +140,7 @@ class InitialVQVAE(nn.Module):
                 stride=1,        
                 padding=1
             ),
-                 
+
         )
 
     def comparaEncoderQuant(self,x):
@@ -167,7 +167,7 @@ class InitialVQVAE(nn.Module):
       
         optimizer = Lion(
             self.parameters(),
-            lr=1e-5,          
+            lr=1e-4,          
             weight_decay=1e-5  
         )
         from torch.optim.lr_scheduler import CyclicLR
@@ -175,7 +175,7 @@ class InitialVQVAE(nn.Module):
         scheduler = CyclicLR(
             optimizer,
             base_lr=1e-5,         
-            max_lr=1e-4,          
+            max_lr=1e-3,          
             step_size_up=1000,   
             step_size_down=1000,  
             mode="triangular2",
