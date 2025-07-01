@@ -140,7 +140,7 @@ class InitialVQVAE(nn.Module):
                 stride=1,        
                 padding=1
             ),
-            nn.Sigmoid(inplace=True),          
+            nn.Sigmoid(),          
         )
 
     def comparaEncoderQuant(self,x):
