@@ -108,6 +108,7 @@ class InitialVQVAE(nn.Module):
                 stride=1, 
                 padding=1       
             ),
+            nn.BatchNorm3d(num_features=self.embedding_dim),
             nn.ReLU(inplace=True),
             nn.Conv3d(
                 in_channels=8,
@@ -116,8 +117,9 @@ class InitialVQVAE(nn.Module):
                 stride=2,        
                 padding=1
             ),
+            nn.BatchNorm3d(num_features=self.embedding_dim),
             nn.ReLU(inplace=True),
-            nn.BatchNorm3d(num_features=self.embedding_dim)
+            
         )
         self.vq = VectorQuantizerEMA(self.num_embeddings, self.embedding_dim)
         self.decoder = nn.Sequential(
@@ -130,13 +132,14 @@ class InitialVQVAE(nn.Module):
                 output_padding=1
             ),
             nn.ReLU(inplace=True),
+            nn.BatchNorm3d(num_features=self.embedding_dim),
             nn.ConvTranspose3d(
                 in_channels=8,
                 out_channels=3,
                 kernel_size=3,
                 stride=1,        
                 padding=1
-            ),
+            ),nn.BatchNorm3d(num_features=self.embedding_dim),
             nn.ReLU(inplace=True),          
         )
 
