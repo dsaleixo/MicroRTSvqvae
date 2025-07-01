@@ -376,9 +376,10 @@ if __name__ == "__main__":
 
 
     marchReal = torch.tensor(exemplo).float()
-    
+    print(marchReal[0][0])
 
     marchReal = marchReal.permute(1,0,2,3).unsqueeze(0)
+    
     salva("RealVideo",marchReal.squeeze())
     
 
