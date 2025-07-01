@@ -359,7 +359,7 @@ if __name__ == "__main__":
     sizeVideo =128
 
     datas = ReadDatas.readDatas(sizeVideo,device)
-    print("load complete")
+    print("load complete",len(datas) )
     datas = datas
     total_size = len(datas) 
     train_size = int(0.8 * total_size)  # 80 amostras para treino
