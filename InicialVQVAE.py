@@ -144,6 +144,7 @@ class InitialVQVAE(nn.Module):
 
     def comparaEncoderQuant(self,x):
         self.eval()
+        
         z = self.encoder(x)
 
         flat_input = z.permute(0, 2, 3, 4, 1).contiguous().view(-1, self.embedding_dim)  # (N, D)
