@@ -138,19 +138,25 @@ class InitialVQVAE(nn.Module):
         """
         from lion_pytorch import Lion
 
+        # Lion optimizer com regularização pequena
         optimizer = Lion(
             self.parameters(),
-            lr=1e-3,          # cuidado! normalmente mais alto que Adam
-            weight_decay=0.0001
+            lr=1e-4,           # será controlado pelo scheduler
+            weight_decay=1e-5  # regularização pequena
+        )
+        from torch.optim.lr_scheduler import CyclicLR
+        # CyclicLR scheduler
+        scheduler = CyclicLR(
+            optimizer,
+            base_lr=1e-5,         # menor learning rate
+            max_lr=1e-3,          # maior learning rate
+            step_size_up=1000,    # passos subindo
+            step_size_down=1000,  # passos descendo
+            mode="triangular2",
+            cycle_momentum=False
         )
 
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode="min",
-            factor=0.5,
-            patience=5,
-            min_lr=1e-6
-        )
+ 
 
         return optimizer, scheduler
 

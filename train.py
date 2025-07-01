@@ -262,8 +262,8 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 recon_loss_epoch += reconstruction_loss.item()
                 
                 loss_jesus_epoch += loss_jesus.item()
-            scheduler.step(total_loss_epoch)  # Atualiza o lr com o scheduler
-            current_lr = scheduler.get_last_lr()[0]
+                scheduler.step(total_loss_epoch)  # Atualiza o lr com o scheduler
+                current_lr = scheduler.get_last_lr()[0]
             totalLossVal, reconLossVal,jesusLossVal,vqLossVal =validation(model,val_loader,device)
             wandb.log({
               "rl"   :current_lr    
@@ -330,7 +330,7 @@ if __name__ == "__main__":
 
     wandb.init(
     project="VQVAE",
-    name = "ArquiteturaVQVAE",
+    name = "ArquiteturaVQVAEFinal",
     config={
          
       
@@ -366,8 +366,8 @@ if __name__ == "__main__":
     test_size = total_size - train_size  # 20 amostras para teste
     train_set, val_set = random_split(datas, [train_size, test_size])
 
-    train_loader = DataLoader(train_set, batch_size=128)
-    val_loader = DataLoader(val_set, batch_size=128, )
+    train_loader = DataLoader(train_set, batch_size=32)
+    val_loader = DataLoader(val_set, batch_size=32, )
  
     exemplo = np.load("resultado.npy")[:sizeVideo]
 
