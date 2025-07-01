@@ -99,7 +99,7 @@ class InitialVQVAE(nn.Module):
                 in_channels=3,
                 out_channels=8,
                 kernel_size=3,
-                stride=1,        # NÃO reduz
+                stride=2,        # NÃO reduz
                 padding=1
             ),
             nn.ReLU(inplace=True),
@@ -107,7 +107,7 @@ class InitialVQVAE(nn.Module):
                 in_channels=8,
                 out_channels=embedding_dim,
                 kernel_size=3,
-                stride=2,        # REDUZ pela metade
+                stride=1,        # REDUZ pela metade
                 padding=1
             ),
             nn.ReLU(inplace=True)
@@ -121,7 +121,7 @@ class InitialVQVAE(nn.Module):
                 in_channels=embedding_dim,
                 out_channels=8,
                 kernel_size=3,
-                stride=2,         # AUMENTA resolução
+                stride=1,         # AUMENTA resolução
                 padding=1,
                 output_padding=1
             ),
@@ -130,7 +130,7 @@ class InitialVQVAE(nn.Module):
                 in_channels=8,
                 out_channels=3,
                 kernel_size=3,
-                stride=1,         # MANTÉM resolução
+                stride=2,         # MANTÉM resolução
                 padding=1
             ),
             nn.ReLU(inplace=True),          # ou ReLU, conforme seus dados
