@@ -108,7 +108,7 @@ class InitialVQVAE(nn.Module):
                 stride=1, 
                 padding=1       
             ),
-            nn.BatchNorm3d(num_features=self.embedding_dim),
+            nn.BatchNorm3d(num_features=8),
             nn.ReLU(inplace=True),
             nn.Conv3d(
                 in_channels=8,
@@ -132,7 +132,7 @@ class InitialVQVAE(nn.Module):
                 output_padding=1
             ),
             nn.ReLU(inplace=True),
-            nn.BatchNorm3d(num_features=self.embedding_dim),
+            nn.BatchNorm3d(num_features=8),
             nn.ConvTranspose3d(
                 in_channels=8,
                 out_channels=3,
