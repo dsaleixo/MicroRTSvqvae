@@ -189,8 +189,9 @@ class InitialVQVAE(nn.Module):
         z = self.encoder(x)
         
         
-
-        if epoch <= 20000:
+        epoch_inicial =20
+        transi =20;
+        if epoch <= epoch_inicial:
             
             z_mix = z
      
@@ -199,9 +200,9 @@ class InitialVQVAE(nn.Module):
             perplexity = 0.0
             used_codes = 0
 
-        elif epoch <80:
+        elif epoch <epoch_inicial+transi:
             quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
-            alpha = (epoch-50 )/ 30.0  
+            alpha = (epoch-epoch_inicial )/ transi
             z_mix = (1 - alpha) * z + alpha * quantized
      
             vq_loss = torch.tensor(0.0, device=x.device)
