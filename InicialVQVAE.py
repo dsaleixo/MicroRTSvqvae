@@ -153,7 +153,7 @@ class InitialVQVAE(nn.Module):
 
         optimizer = AdamW(
             self.parameters(),
-            lr=3e-4,           # Learning rate base
+            lr=3e-3,           # Learning rate base
             betas=(0.9, 0.95), # Momentos suaves
             weight_decay=1e-4
         )
