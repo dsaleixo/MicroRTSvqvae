@@ -99,7 +99,7 @@ class InitialVQVAE(nn.Module):
     def __init__(self) -> None:
         super(InitialVQVAE, self).__init__()
         self.num_embeddings = 32
-        self.embedding_dim = 2
+        self.embedding_dim = 4
         self.encoder = nn.Sequential(
             nn.Conv3d(
                 in_channels=3,
