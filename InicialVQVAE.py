@@ -192,7 +192,7 @@ class InitialVQVAE(nn.Module):
         
         quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
 
-        if epoch < 50:
+        if epoch < 0:
             alpha = epoch / 50.0  
             z_mix = (1 - alpha) * z + alpha * quantized
      
