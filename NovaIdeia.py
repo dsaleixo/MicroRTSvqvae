@@ -178,7 +178,7 @@ class NovaIDEIA(nn.Module):
         self.num_embeddings = 32
 
         self.encoder = Encoder(embedding_dim=self.embedding_dim)
-        self.vq = VectorQuantizer(num_embeddings=self.num_embeddings, embedding_dim=self.embedding_dim)
+        self.vq = VectorQuantizerEMA(num_embeddings=self.num_embeddings, embedding_dim=self.embedding_dim)
         self.decoder = Decoder(embedding_dim=self.embedding_dim)
 
 
