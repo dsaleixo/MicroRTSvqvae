@@ -148,7 +148,7 @@ class InitialVQVAE(nn.Module):
                     print(i,flat_input[i])
                     print()
 
-        s= set(codes)
+        s= set(codes[0])
         print("fim",len(s))
     def getOptimizer(self,):
  
