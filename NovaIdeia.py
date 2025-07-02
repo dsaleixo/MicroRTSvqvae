@@ -231,7 +231,7 @@ class NovaIDEIA(nn.Module):
         
         
         epoch_inicial =-1
-        transi =50;
+        transi =-1;
         if epoch <= epoch_inicial:
             
             z_mix = z
