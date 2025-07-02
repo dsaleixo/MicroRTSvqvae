@@ -179,9 +179,9 @@ def validation(model, val_loader: DataLoader, device='cuda',):
 
         reconstructions, vq_loss, _,_,_ = model(x,112)
         reconstruction_loss = F.mse_loss(reconstructions, x)
-        #loss_jesus = closest_palette_loss(reconstructions, x,palette)
+        loss_jesus = closest_palette_loss(reconstructions, x,palette)
         total_loss = reconstruction_loss +loss_jesus
-        total_loss = reconstruction_loss# +loss_jesus
+        #total_loss = reconstruction_loss# +loss_jesus
         if vq_loss!=None:
             vq_loss_epoch += vq_loss.item()
         
