@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from lion_pytorch import Lion
 
 
-
+'''
 class VectorQuantizerEMA(nn.Module):
     def __init__(self, num_embeddings: int, embedding_dim: int, decay: float = 0.99, epsilon: float = 1e-6):
         """
@@ -86,6 +86,122 @@ class VectorQuantizerEMA(nn.Module):
         encoding_indices = encoding_indices.view(input_shape[0], input_shape[2], input_shape[3], input_shape[4])
 
         return quantized_st, loss, encoding_indices, perplexity, used_codes
+'''
+class VectorQuantizerEMA(nn.Module):
+    def __init__(
+        self,
+        num_embeddings: int,
+        embedding_dim: int,
+        decay: float = 0.99,
+        epsilon: float = 1e-6,
+        commitment_cost: float = 0.25,
+    ):
+        """
+        VQ-VAE codebook with Exponential Moving Average (EMA) updates.
+
+        Args:
+            num_embeddings: Number of discrete codebook vectors (M).
+            embedding_dim: Dimension of each codebook vector (D).
+            decay: EMA decay factor (γ).
+            epsilon: Small value to avoid division by zero.
+            commitment_cost: Weight for the commitment loss term (β).
+        """
+        super().__init__()
+
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+        self.decay = decay
+        self.epsilon = epsilon
+        self.commitment_cost = commitment_cost
+
+        # Codebook: shape (M, D), initialized normalized
+        self.register_buffer(
+            "embedding", F.normalize(torch.randn(num_embeddings, embedding_dim), dim=1)
+        )
+        self.register_buffer("cluster_size", torch.ones(num_embeddings))
+        self.register_buffer("embedding_avg", self.embedding.clone())
+
+    def forward(
+        self, z: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Args:
+            z: Input tensor of shape (B, C, D, H, W)
+
+        Returns:
+            quantized: Quantized output (B, C, D, H, W)
+            loss: Total quantization loss
+            encoding_indices: Indices of codebook entries used (B, D, H, W)
+            perplexity: float tensor
+            used_codes: float tensor (percentual dos códigos utilizados)
+        """
+        input_shape = z.shape  # (B, C, D, H, W)
+        # Flatten to (N, D)
+        flat_input = (
+            z.permute(0, 2, 3, 4, 1).contiguous().view(-1, self.embedding_dim)
+        )
+
+        # Compute distances (N, M)
+        distances = torch.cdist(
+            flat_input.unsqueeze(0), self.embedding.unsqueeze(0)
+        ).squeeze(0)
+
+        # Nearest codebook entries
+        encoding_indices = torch.argmin(distances, dim=1)
+        encodings = F.one_hot(encoding_indices, self.num_embeddings).type(flat_input.dtype)
+
+        # Quantized output (N, D)
+        quantized = encodings @ self.embedding
+        quantized_reshaped = quantized.view(
+            input_shape[0], input_shape[2], input_shape[3], input_shape[4], input_shape[1]
+        )
+        quantized_reshaped = quantized_reshaped.permute(
+            0, 4, 1, 2, 3
+        ).contiguous()  # (B, C, D, H, W)
+
+        # Monitoring
+        avg_probs = encodings.mean(dim=0)
+        perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
+        used_codes = (self.cluster_size > 1e-5).sum().float() / self.num_embeddings
+
+        # EMA updates (only during training)
+        if self.training:
+            with torch.no_grad():
+                new_cluster_size = encodings.sum(0)
+                self.cluster_size.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
+
+                embed_sum = encodings.T @ flat_input
+                self.embedding_avg.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
+
+                n = self.cluster_size.sum()
+                cluster_size = (
+                    (self.cluster_size + self.epsilon)
+                    / (n + self.num_embeddings * self.epsilon)
+                ) * n
+
+                self.embedding.copy_(
+                    self.embedding_avg / (cluster_size.unsqueeze(1) + self.epsilon)
+                )
+
+        # Straight-through estimator
+        quantized_st = z + (quantized_reshaped - z).detach()
+
+        # Compute commitment loss separately
+        # Note: Stop gradient on quantized (i.e., codebook)
+        commitment_loss = self.commitment_cost * F.mse_loss(quantized_reshaped.detach(), z)
+
+        # (Optional) Codebook loss term: encourage embeddings to move toward encoder outputs
+        # Not needed here because EMA updates already handle it
+
+        # Total loss
+        total_loss = commitment_loss
+
+        # Reshape encoding indices to (B, D, H, W)
+        encoding_indices = encoding_indices.view(
+            input_shape[0], input_shape[2], input_shape[3], input_shape[4]
+        )
+
+        return quantized_st, total_loss, encoding_indices, perplexity, used_codes
 
     def printCodeBook(self):
         print("\nCodeBook")
