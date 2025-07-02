@@ -208,8 +208,8 @@ class InitialVQVAE(nn.Module):
      
             vq_loss = torch.tensor(0.0, device=x.device)
             codes = 0
-            perplexity = 0.0
-            used_codes = 0
+            perplexity = perplexity
+            used_codes =  used_codes
         else:
             self.vq.decay=0.90
             quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
