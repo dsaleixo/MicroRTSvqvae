@@ -125,7 +125,7 @@ class InitialVQVAE(nn.Module):
         self.decoder = nn.Sequential(
             nn.ConvTranspose3d(
                 in_channels=self.embedding_dim,
-                outS_channels=32,
+                out_channels=32,
                 kernel_size=3,
                 stride=2,        
                 padding=1,
