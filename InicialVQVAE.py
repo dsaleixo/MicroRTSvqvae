@@ -108,7 +108,7 @@ class InitialVQVAE(nn.Module):
                 stride=1, 
                 padding=1       
             ),
-            nn.BatchNorm3d(num_features=8),
+            #nn.BatchNorm3d(num_features=8),
             nn.ReLU(inplace=True),
             nn.Conv3d(
                 in_channels=8,
@@ -117,7 +117,7 @@ class InitialVQVAE(nn.Module):
                 stride=2,        
                 padding=1
             ),
-            nn.BatchNorm3d(num_features=self.embedding_dim),
+            #nn.BatchNorm3d(num_features=self.embedding_dim),
             nn.Tanh(),
             
         )
@@ -125,14 +125,14 @@ class InitialVQVAE(nn.Module):
         self.decoder = nn.Sequential(
             nn.ConvTranspose3d(
                 in_channels=self.embedding_dim,
-                out_channels=32,
+                outS_channels=32,
                 kernel_size=3,
                 stride=2,        
                 padding=1,
                 output_padding=1
             ),
             nn.ReLU(inplace=True),
-            nn.BatchNorm3d(num_features=32),
+            #Snn.BatchNorm3d(num_features=32),
             nn.ConvTranspose3d(
                 in_channels=32,
                 out_channels=3,
