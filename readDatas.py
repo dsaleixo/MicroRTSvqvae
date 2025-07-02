@@ -29,7 +29,8 @@ class ReadDatas():
         for arq in arquivos:
   
                     cont+=1
-                    print(arq)
+                    if cont%100==0:
+                          print(cont//100)
                     loaded_data = np.load('./datas3/'+arq)
                     shape = loaded_data.shape
                     #print(shape,len(dados))
