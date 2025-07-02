@@ -190,7 +190,7 @@ class InitialVQVAE(nn.Module):
     def forward(self, x,epoch):
         z = self.encoder(x)
         
-        quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
+        
 
         if epoch <= 50:
             
@@ -202,6 +202,7 @@ class InitialVQVAE(nn.Module):
             used_codes = 0
 
         elif epoch <80:
+            quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
             alpha = (epoch-50 )/ 30.0  
             z_mix = (1 - alpha) * z + alpha * quantized
      
@@ -210,6 +211,7 @@ class InitialVQVAE(nn.Module):
             perplexity = 0.0
             used_codes = 0
         else:
+            quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
             z_mix = quantized  
 
         out = self.decoder(z_mix)
