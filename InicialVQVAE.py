@@ -134,7 +134,7 @@ class InitialVQVAE(nn.Module):
             nn.ReLU(inplace=True),
             nn.BatchNorm3d(num_features=32),
             nn.ConvTranspose3d(
-                in_channels=8,
+                in_channels=32,
                 out_channels=3,
                 kernel_size=3,
                 stride=1,        
@@ -179,7 +179,7 @@ class InitialVQVAE(nn.Module):
             factor=0.5,      # Reduz o LR pela metade
             patience=10,     # Espera 10 epochs sem melhora
             threshold=1e-4,  # Quantidade mínima de melhora para resetar o contador
-            min_lr=1e-6      # Nunca passa abaixo disso
+            min_lr=1e-8      # Nunca passa abaixo disso
         )
         
 
