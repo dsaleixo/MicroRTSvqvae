@@ -190,7 +190,7 @@ class InitialVQVAE(nn.Module):
         
         
 
-        if epoch <= 50:
+        if epoch <= 20000:
             
             z_mix = z
      
