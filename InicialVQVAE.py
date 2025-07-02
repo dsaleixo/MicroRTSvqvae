@@ -86,7 +86,7 @@ class VectorQuantizerEMA(nn.Module):
         print("\nCodeBook")
         cont=0
         for i in range(self.num_embeddings):
-            if sum(self.embedding[i])>0.001:
+            if sum(self.embedding[i])>0.001 and False:
                 print(i, self.embedding[i])
             else:
                 print(i,0)
