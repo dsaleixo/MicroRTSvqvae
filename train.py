@@ -5,6 +5,7 @@ from torch.utils.data import random_split
 import torch.nn.functional as F
 from InicialVQVAE import InitialVQVAE
 from InitialAutoEncoder import VideoAutoencoder
+from NovaIdeia import NovaIDEIA
 from readDatas import ReadDatas
 import numpy as np
 import os
@@ -333,7 +334,7 @@ if __name__ == "__main__":
 
     wandb.init(
     project="VQVAE",
-    name = "VQVAEsuperAda22",
+    name = "é fogo nova ideia",
     config={
          
       
@@ -386,7 +387,7 @@ if __name__ == "__main__":
     
 
     
-    model = InitialVQVAE().to(device)
+    model = NovaIDEIA().to(device)
  
     loopTrain(model, 10000, train_loader, val_loader,marchReal, device)
 
