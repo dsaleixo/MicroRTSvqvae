@@ -178,7 +178,7 @@ class InitialVQVAE(nn.Module):
         z = self.encoder(x)
         
         
-        epoch_inicial =25
+        epoch_inicial =2500
         transi =50;
         if epoch <= epoch_inicial:
             
