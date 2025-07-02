@@ -87,6 +87,19 @@ class VectorQuantizerEMA(nn.Module):
 
         return quantized_st, loss, encoding_indices, perplexity, used_codes
 
+    def printCodeBook(self):
+        print("\nCodeBook")
+        cont=0
+        for i in range(self.num_embeddings):
+            if sum(self.embedding[i])>0.001 or True:
+                print(i, self.embedding[i])
+            else:
+                print(i,0)
+                cont+=1
+        print("0s",cont)
+        print()
+    
+
 class Encoder(nn.Module):
     def __init__(self, embedding_dim: int):
         super().__init__()
