@@ -158,7 +158,7 @@ class InitialVQVAE(nn.Module):
             self.parameters(),
             lr=3e-3,           # Learning rate base
             betas=(0.9, 0.95), # Momentos suaves
-            weight_decay=1e-4
+            weight_decay=1e-6
         )
         from torch.optim.lr_scheduler import ReduceLROnPlateau
 
