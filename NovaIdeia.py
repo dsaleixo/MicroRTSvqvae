@@ -193,7 +193,7 @@ class NovaIDEIA(nn.Module):
         n = flat_quantized.shape[0]
         print("analise ",n)
         for i in range(n):
-                if sum(flat_quantized[i])>16*3:
+                if sum(flat_input[i])>16*3:
                     print(i,flat_quantized[i])
                     print(i,flat_input[i])
                     print()
