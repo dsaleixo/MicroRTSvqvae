@@ -99,7 +99,7 @@ class InitialVQVAE(nn.Module):
     def __init__(self) -> None:
         super(InitialVQVAE, self).__init__()
         self.num_embeddings = 32
-        self.embedding_dim = 4
+        self.embedding_dim = 8
         self.encoder = nn.Sequential(
             nn.Conv3d(
                 in_channels=3,
@@ -125,14 +125,14 @@ class InitialVQVAE(nn.Module):
         self.decoder = nn.Sequential(
             nn.ConvTranspose3d(
                 in_channels=self.embedding_dim,
-                out_channels=8,
+                out_channels=32,
                 kernel_size=3,
                 stride=2,        
                 padding=1,
                 output_padding=1
             ),
             nn.ReLU(inplace=True),
-            nn.BatchNorm3d(num_features=8),
+            nn.BatchNorm3d(num_features=32),
             nn.ConvTranspose3d(
                 in_channels=8,
                 out_channels=3,
@@ -140,7 +140,7 @@ class InitialVQVAE(nn.Module):
                 stride=1,        
                 padding=1
             ),
-
+            nn.ReLU(inplace=True),
         )
 
     def comparaEncoderQuant(self,x):
