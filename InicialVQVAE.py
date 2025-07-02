@@ -163,27 +163,25 @@ class InitialVQVAE(nn.Module):
         print("fim",len(s))
     def getOptimizer(self,):
  
-        from lion_pytorch import Lion
+        from torch.optim import AdamW
 
-      
-        optimizer = Lion(
+        optimizer = AdamW(
             self.parameters(),
-            lr=1e-3,          
-            weight_decay=1e-5  
+            lr=3e-4,           # Learning rate base
+            betas=(0.9, 0.95), # Momentos suaves
+            weight_decay=1e-4
         )
-        from torch.optim.lr_scheduler import CyclicLR
-      
-        scheduler = CyclicLR(
-            optimizer,
-            base_lr=1e-5,         
-            max_lr=1e-2,          
-            step_size_up=1000,   
-            step_size_down=1000,  
-            mode="triangular2",
-            cycle_momentum=False
-        )
+        from torch.optim.lr_scheduler import ReduceLROnPlateau
 
- 
+        scheduler = ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=0.5,      # Reduz o LR pela metade
+            patience=10,     # Espera 10 epochs sem melhora
+            threshold=1e-4,  # Quantidade mínima de melhora para resetar o contador
+            min_lr=1e-6      # Nunca passa abaixo disso
+        )
+        
 
         return optimizer, scheduler
 
