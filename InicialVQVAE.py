@@ -192,7 +192,7 @@ class InitialVQVAE(nn.Module):
         
         quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
 
-        if epoch <= 10:
+        if epoch <= 50:
             
             z_mix = z
      
@@ -201,8 +201,8 @@ class InitialVQVAE(nn.Module):
             perplexity = 0.0
             used_codes = 0
 
-        elif epoch <30:
-            alpha = (epoch-10 )/ 20.0  
+        elif epoch <80:
+            alpha = (epoch-50 )/ 30.0  
             z_mix = (1 - alpha) * z + alpha * quantized
      
             vq_loss = torch.tensor(0.0, device=x.device)
