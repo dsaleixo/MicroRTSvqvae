@@ -255,7 +255,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 #total_loss = reconstruction_loss#+vq_loss
                    
                 total_loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                #torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 optimizer.step()
                 if vq_loss!=None:
                     vq_loss_epoch += vq_loss.item()
@@ -369,7 +369,7 @@ if __name__ == "__main__":
     test_size = total_size - train_size  # 20 amostras para teste
     train_set, val_set = random_split(datas, [train_size, test_size])
 
-    train_loader = DataLoader(train_set, batch_size=128)
+    train_loader = DataLoader(train_set, batch_size=32)
     val_loader = DataLoader(val_set, batch_size=32, )
  
     exemplo = np.load("resultado.npy")[:sizeVideo]
