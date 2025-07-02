@@ -195,7 +195,7 @@ class InitialVQVAE(nn.Module):
             alpha = (epoch-epoch_inicial )/ transi
             z_mix = (1 - alpha) * z + alpha * quantized
      
-            vq_loss = torch.tensor(0.0, device=x.device)
+            #vq_loss = torch.tensor(0.0, device=x.device)
             codes = 0
             perplexity = perplexity
             used_codes =  used_codes
