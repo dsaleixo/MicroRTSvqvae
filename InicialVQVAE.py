@@ -132,7 +132,7 @@ class InitialVQVAE(nn.Module):
                 output_padding=1
             ),
             nn.ReLU(inplace=True),
-            nn.BatchNorm3d(num_features=8),
+            nn.BatchNorm3d(num_features=3),
             nn.ConvTranspose3d(
                 in_channels=3,
                 out_channels=3,

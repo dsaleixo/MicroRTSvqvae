@@ -333,7 +333,7 @@ if __name__ == "__main__":
 
     wandb.init(
     project="VQVAE",
-    name = "ArquiteturaVQVAEFinal30",
+    name = "ArquiteturaVQVAEFinal40",
     config={
          
       
