@@ -99,13 +99,13 @@ class VectorQuantizerEMA(nn.Module):
         print("0s",cont)
         print()
     
-
+import torch.nn.utils as utils
 class Encoder(nn.Module):
     def __init__(self, embedding_dim: int):
         super().__init__()
-        self.conv1 = nn.Conv3d(in_channels=3, out_channels=4, kernel_size=4, stride=2, padding=1)
-        self.conv2 = nn.Conv3d(in_channels=4, out_channels=8, kernel_size=4, stride=2, padding=1)
-        self.conv4 = nn.Conv3d(in_channels=8, out_channels=embedding_dim, kernel_size=3, stride=1, padding=1)
+        self.conv1 = utils.weight_normnn.Conv3d(in_channels=3, out_channels=4, kernel_size=4, stride=2, padding=1))
+        self.conv2 = utils.weight_normnn.Conv3d(in_channels=4, out_channels=8, kernel_size=4, stride=2, padding=1))
+        self.conv4 = utils.weight_normnn.Conv3d(in_channels=8, out_channels=embedding_dim, kernel_size=3, stride=1, padding=1))
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
