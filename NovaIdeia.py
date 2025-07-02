@@ -112,7 +112,7 @@ class Encoder(nn.Module):
         x = self.relu(self.conv1(x))
         x = self.relu(self.conv2(x))
         x = self.conv4(x)
-        return x
+        return  F.softsign(x)
 
 class Decoder(nn.Module):
     def __init__(self, embedding_dim: int):
@@ -126,7 +126,7 @@ class Decoder(nn.Module):
         x = self.relu(self.deconv1(x))
         x = self.relu(self.deconv3(x))
         x = self.deconv4(x)
-        return x
+        return  F.sigmoid(x)
 
 class VectorQuantizer(nn.Module):
     def __init__(self, num_embeddings: int, embedding_dim: int, commitment_cost: float = 0.25):
@@ -209,7 +209,7 @@ class NovaIDEIA(nn.Module):
 
         optimizer = Adam(
             self.parameters(),
-            lr=3e-6,           # Learning rate base
+            lr=3e-5,           # Learning rate base
             betas=(0.9, 0.95), # Momentos suaves
             weight_decay=1e-6  # L2 regularization
         )
