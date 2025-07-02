@@ -103,7 +103,7 @@ class InitialVQVAE(nn.Module):
         self.encoder = nn.Sequential(
             nn.Conv3d(
                 in_channels=3,
-                out_channels=8,
+                out_channels=16,
                 kernel_size=3,
                 stride=1, 
                 padding=1       
@@ -118,7 +118,7 @@ class InitialVQVAE(nn.Module):
                 padding=1
             ),
             #nn.BatchNorm3d(num_features=self.embedding_dim),
-            nn.Tanh(),
+            nn.ReLU(inplace=True),
             
         )
         self.vq = VectorQuantizerEMA(self.num_embeddings, self.embedding_dim)
