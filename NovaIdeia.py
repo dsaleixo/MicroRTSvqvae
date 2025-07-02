@@ -230,7 +230,7 @@ class NovaIDEIA(nn.Module):
         z = self.encoder(x)
         
         
-        epoch_inicial =25
+        epoch_inicial =-1
         transi =50;
         if epoch <= epoch_inicial:
             
