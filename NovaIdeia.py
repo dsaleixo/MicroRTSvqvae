@@ -340,13 +340,13 @@ class NovaIDEIA(nn.Module):
 
 
 
-        scheduler = CyclicLR(
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
-            base_lr=1e-6,    # LR mínimo
-            max_lr=1e-1,     # LR máximo
-            step_size_up=2000,  # Número de batches para subir do base_lr ao max_lr
-            mode='triangular',  # Outros modos: 'triangular2', 'exp_range'
-            cycle_momentum=False  # Se usar otimizadores sem momentum, deixe False
+            mode="min",      # ou "max", depende da métrica
+            factor=0.5,      # Reduz LR pela metade
+            patience=5,      # Espera 5 epochs sem melhora
+            verbose=True,
+            min_lr=1e-6
         )
                 
 
@@ -368,7 +368,7 @@ class NovaIDEIA(nn.Module):
             used_codes = 0
 
         elif epoch <epoch_inicial+transi:
-            self.vq.decay=0.9
+            self.vq.decay=0.7
             quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
             alpha = (epoch-epoch_inicial )/ transi
             z_mix = (1 - alpha) * z + alpha * quantized
@@ -378,7 +378,7 @@ class NovaIDEIA(nn.Module):
             perplexity = perplexity
             used_codes =  used_codes
         else:
-            self.vq.decay=0.99
+            self.vq.decay=0.9
             quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
             z_mix = quantized  
 
