@@ -332,15 +332,19 @@ class NovaIDEIA(nn.Module):
             weight_decay=1e-6  # L2 regularization
         )
 
-        scheduler = ReduceLROnPlateau(
+        from torch.optim.lr_scheduler import CyclicLR
+
+
+
+        scheduler = CyclicLR(
             optimizer,
-            mode="min",
-            factor=0.1,        # Reduz o LR pela metade
-            patience=10,       # Espera 10 epochs sem melhora
-            threshold=1e-5,    # Quantidade mínima de melhora para resetar o contador
-            min_lr=1e-6        # Nunca passa abaixo disso
+            base_lr=1e-5,    # LR mínimo
+            max_lr=1e-3,     # LR máximo
+            step_size_up=2000,  # Número de batches para subir do base_lr ao max_lr
+            mode='triangular',  # Outros modos: 'triangular2', 'exp_range'
+            cycle_momentum=False  # Se usar otimizadores sem momentum, deixe False
         )
-        
+                
 
         return optimizer, scheduler
 
