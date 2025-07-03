@@ -325,7 +325,7 @@ class NovaIDEIA(nn.Module):
 
         optimizer = Adam(
             self.parameters(),
-            lr=3e-3,           # Learning rate base
+            lr=3e-4,           # Learning rate base
             betas=(0.9, 0.95), # Momentos suaves
             weight_decay=1e-6  # L2 regularization
         )
@@ -333,7 +333,7 @@ class NovaIDEIA(nn.Module):
         scheduler = ReduceLROnPlateau(
             optimizer,
             mode="min",
-            factor=0.5,        # Reduz o LR pela metade
+            factor=0.1,        # Reduz o LR pela metade
             patience=10,       # Espera 10 epochs sem melhora
             threshold=1e-5,    # Quantidade mínima de melhora para resetar o contador
             min_lr=1e-6        # Nunca passa abaixo disso
