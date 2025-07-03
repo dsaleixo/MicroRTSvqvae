@@ -92,7 +92,7 @@ class VectorQuantizerEMA(nn.Module):
         self,
         num_embeddings: int,
         embedding_dim: int,
-        decay: float = 0.99,
+        decay: float = 0.9,
         epsilon: float = 1e-6,
         commitment_cost: float = 0.25,
     ):
@@ -331,7 +331,7 @@ class NovaIDEIA(nn.Module):
 
         optimizer = Adam(
             self.parameters(),
-            lr=3e-1,           # Learning rate base
+            lr=3e-3,           # Learning rate base
             betas=(0.9, 0.95), # Momentos suaves
             weight_decay=1e-6  # L2 regularization
         )
@@ -345,8 +345,8 @@ class NovaIDEIA(nn.Module):
             mode="min",      # ou "max", depende da métrica
             factor=0.5,      # Reduz LR pela metade
             patience=5,      # Espera 5 epochs sem melhora
-            verbose=True,
-            min_lr=1e-6
+        
+            min_lr=0.001
         )
                 
 
@@ -356,8 +356,8 @@ class NovaIDEIA(nn.Module):
         z = self.encoder(x)
         
         
-        epoch_inicial =25
-        transi =25
+        epoch_inicial =-1
+        transi =-1
         if epoch <= epoch_inicial:
             
             z_mix = z

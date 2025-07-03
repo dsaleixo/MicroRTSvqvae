@@ -264,9 +264,11 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 recon_loss_epoch += reconstruction_loss.item()
                 
                 loss_jesus_epoch += loss_jesus.item()
-                scheduler.step(total_loss_epoch)  # Atualiza o lr com o scheduler
-            current_lr = scheduler.get_last_lr()[0]
             totalLossVal, reconLossVal,jesusLossVal,vqLossVal =validation(model,val_loader,device)
+            scheduler.step(totalLossVal)  # Atualiza o lr com o scheduler
+            
+            current_lr = scheduler.get_last_lr()[0]
+          
             wandb.log({
               "rl"   :current_lr    
              })
