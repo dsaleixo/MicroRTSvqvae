@@ -244,7 +244,7 @@ class Decoder(nn.Module):
         x = torch.relu(self.deconv3(x))
       
         x = self.deconv4(x)
-        return  F.sigmoid(x)
+        return  x
 
 class VectorQuantizer(nn.Module):
     def __init__(self, num_embeddings: int, embedding_dim: int, commitment_cost: float = 0.25):
@@ -327,7 +327,7 @@ class NovaIDEIA(nn.Module):
 
         optimizer = Adam(
             self.parameters(),
-            lr=3e-4,           # Learning rate base
+            lr=3e-3,           # Learning rate base
             betas=(0.9, 0.95), # Momentos suaves
             weight_decay=1e-6  # L2 regularization
         )
@@ -338,7 +338,7 @@ class NovaIDEIA(nn.Module):
 
         scheduler = CyclicLR(
             optimizer,
-            base_lr=1e-5,    # LR mínimo
+            base_lr=1e-6,    # LR mínimo
             max_lr=1e-3,     # LR máximo
             step_size_up=2000,  # Número de batches para subir do base_lr ao max_lr
             mode='triangular',  # Outros modos: 'triangular2', 'exp_range'
