@@ -225,8 +225,8 @@ class Encoder(nn.Module):
         self.relu = nn.Tanh()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.relu(self.conv1(x))
-        x = self.relu(self.conv2(x))
+        x = torch.relu(self.conv1(x))
+        x = torch.relu(self.conv2(x))
         x = self.relu(self.conv4(x))
         return  x
 
@@ -239,10 +239,10 @@ class Decoder(nn.Module):
         self.relu = nn.Tanh()
         self.patial_dropout3d = nn.Dropout3d(p=0.05)
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.relu(self.deconv1(x))
-        x = self.patial_dropout3d(x)
-        x = self.relu(self.deconv3(x))
-        x = self.patial_dropout3d(x)
+        x = torch.relu(self.deconv1(x))
+ 
+        x = torch.relu(self.deconv3(x))
+      
         x = self.deconv4(x)
         return  F.sigmoid(x)
 
