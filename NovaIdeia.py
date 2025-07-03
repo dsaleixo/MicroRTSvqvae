@@ -227,8 +227,8 @@ class Encoder(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.relu(self.conv1(x))
         x = self.relu(self.conv2(x))
-        x = self.conv4(x)
-        return  F.softsign(x)
+        x = self.relu(self.conv4(x))
+        return  x
 
 class Decoder(nn.Module):
     def __init__(self, embedding_dim: int):
