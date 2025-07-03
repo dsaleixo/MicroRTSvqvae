@@ -229,9 +229,9 @@ class Encoder(nn.Module):
         self.relu = nn.ReLU6()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = torch.relu(self.conv1(x))
-        x = torch.relu(self.conv2(x))
-        x = torch.relu(self.relu(self.conv4(x)))
+        x = self.relu(self.conv1(x))
+        x = self.relu(self.conv2(x))
+        x = self.relu(self.conv4(x))
         return  x
 
 class Decoder(nn.Module):
@@ -243,9 +243,9 @@ class Decoder(nn.Module):
         self.relu = nn.ReLU6()
         self.patial_dropout3d = nn.Dropout3d(p=0.05)
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = torch.relu(self.deconv1(x))
+        x = self.relu(self.deconv1(x))
  
-        x = torch.relu(self.deconv3(x))
+        x = self.relu(self.deconv3(x))
       
         x = self.deconv4(x)
         return  x
@@ -297,7 +297,7 @@ class NovaIDEIA(nn.Module):
     def __init__(self):
         super().__init__()
         self.embedding_dim = 16
-        self.num_embeddings = 32
+        self.num_embeddings = 64
 
         self.encoder = Encoder(embedding_dim=self.embedding_dim)
         self.vq = VectorQuantizerEMA(num_embeddings=self.num_embeddings, embedding_dim=self.embedding_dim)
