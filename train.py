@@ -252,7 +252,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 reconstructions, vq_loss, _,perplexity, used_codes = model(x,epoch)
                 reconstruction_loss = F.mse_loss(reconstructions, x)
                 loss_jesus = closest_palette_loss(reconstructions, x,palette)
-                total_loss = loss_jesus+reconstruction_loss#+# vq_loss
+                total_loss = loss_jesus+reconstruction_loss*100#+# vq_loss
                 #total_loss = reconstruction_loss#+vq_loss
                    
                 total_loss.backward()
