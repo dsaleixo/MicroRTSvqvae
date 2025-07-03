@@ -378,7 +378,7 @@ class NovaIDEIA(nn.Module):
             perplexity = perplexity
             used_codes =  used_codes
         else:
-            self.vq.decay=0.9
+            self.vq.decay=0.99
             quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
             z_mix = quantized  
 
