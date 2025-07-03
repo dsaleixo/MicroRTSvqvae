@@ -222,7 +222,7 @@ class Encoder(nn.Module):
         self.conv1 = utils.weight_norm(nn.Conv3d(in_channels=3, out_channels=4, kernel_size=4, stride=2, padding=1))
         self.conv2 = utils.weight_norm(nn.Conv3d(in_channels=4, out_channels=8, kernel_size=4, stride=2, padding=1))
         self.conv4 = utils.weight_norm(nn.Conv3d(in_channels=8, out_channels=embedding_dim, kernel_size=3, stride=1, padding=1))
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.SiLU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.relu(self.conv1(x))
@@ -236,7 +236,7 @@ class Decoder(nn.Module):
         self.deconv1 = utils.weight_norm(nn.ConvTranspose3d(in_channels=embedding_dim, out_channels=8, kernel_size=4, stride=2, padding=1))
         self.deconv3 = utils.weight_norm(nn.ConvTranspose3d(in_channels=8, out_channels=4, kernel_size=4, stride=2, padding=1))
         self.deconv4 = utils.weight_norm(nn.ConvTranspose3d(in_channels=4, out_channels=3, kernel_size=3, stride=1, padding=1))
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.SiLU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.relu(self.deconv1(x))
