@@ -241,7 +241,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
             n_batch = len(train_loader)
             for batch in train_loader:
 
-                if cont_batch>n_batch*0.15 and epoch<0:
+                if cont_batch>n_batch*0.15 and epoch<20:
                     break
                 cont_batch+=1
 
