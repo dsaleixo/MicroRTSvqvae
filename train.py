@@ -255,7 +255,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
    
                 loss_jesus = closest_palette_loss(reconstructions, x,palette)
                 loss2_norm = loss_jesus / loss_jesus.detach().mean()
-                total_loss = 0.5 * loss1_norm + 0.5 * loss2_norm
+                total_loss = 0.8 * loss1_norm + 0.25 * loss2_norm
                 #total_loss = reconstruction_loss#+vq_loss
                    
                 total_loss.backward()
