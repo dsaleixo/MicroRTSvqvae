@@ -116,8 +116,10 @@ class VectorQuantizerEMA(nn.Module):
 
         # Codebook: shape (M, D), initialized normalized
         self.register_buffer(
-            "embedding", F.normalize(torch.randn(num_embeddings, embedding_dim), dim=1)
+            "embedding", F.normalize(torch.randn(num_embeddings, embedding_dim), dim=1)+1
         )
+        self.embedding[0] = torch.zeros_like(self.embedding[0])
+        self.embedding[1] = torch.ones_like(self.embedding[1])*6
         self.register_buffer("cluster_size", torch.ones(num_embeddings))
         self.register_buffer("embedding_avg", self.embedding.clone())
 
