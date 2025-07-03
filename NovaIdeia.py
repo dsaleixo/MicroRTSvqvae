@@ -358,7 +358,7 @@ class NovaIDEIA(nn.Module):
             used_codes = 0
 
         elif epoch <epoch_inicial+transi:
-            self.vq.decay=0.999
+            self.vq.decay=0.99
             quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
             alpha = (epoch-epoch_inicial )/ transi
             z_mix = (1 - alpha) * z + alpha * quantized
@@ -368,7 +368,7 @@ class NovaIDEIA(nn.Module):
             perplexity = perplexity
             used_codes =  used_codes
         else:
-            self.vq.decay=0.99
+            self.vq.decay=0.9
             quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
             z_mix = quantized  
 
