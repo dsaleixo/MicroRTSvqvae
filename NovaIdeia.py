@@ -331,7 +331,7 @@ class NovaIDEIA(nn.Module):
 
         optimizer = Adam(
             self.parameters(),
-            lr=3e-3,           # Learning rate base
+            lr=3e-1,           # Learning rate base
             betas=(0.9, 0.95), # Momentos suaves
             weight_decay=1e-6  # L2 regularization
         )
@@ -343,7 +343,7 @@ class NovaIDEIA(nn.Module):
         scheduler = CyclicLR(
             optimizer,
             base_lr=1e-6,    # LR mínimo
-            max_lr=1e-3,     # LR máximo
+            max_lr=1e-1,     # LR máximo
             step_size_up=2000,  # Número de batches para subir do base_lr ao max_lr
             mode='triangular',  # Outros modos: 'triangular2', 'exp_range'
             cycle_momentum=False  # Se usar otimizadores sem momentum, deixe False
