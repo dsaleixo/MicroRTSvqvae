@@ -237,10 +237,12 @@ class Decoder(nn.Module):
         self.deconv3 = utils.weight_norm(nn.ConvTranspose3d(in_channels=8, out_channels=4, kernel_size=4, stride=2, padding=1))
         self.deconv4 = utils.weight_norm(nn.ConvTranspose3d(in_channels=4, out_channels=3, kernel_size=3, stride=1, padding=1))
         self.relu = nn.Tanh()
-
+        self.patial_dropout3d = nn.Dropout3d(p=0.3)
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.relu(self.deconv1(x))
+        x = self.patial_dropout3d(x)
         x = self.relu(self.deconv3(x))
+        x = self.patial_dropout3d(x)
         x = self.deconv4(x)
         return  F.sigmoid(x)
 
