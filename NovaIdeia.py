@@ -346,8 +346,8 @@ class NovaIDEIA(nn.Module):
         z = self.encoder(x)
         
         
-        epoch_inicial =100
-        transi =50
+        epoch_inicial =25
+        transi =25
         if epoch <= epoch_inicial:
             
             z_mix = z
