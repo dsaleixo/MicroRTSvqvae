@@ -343,8 +343,8 @@ class NovaIDEIA(nn.Module):
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
             mode="min",      # ou "max", depende da métrica
-            factor=0.5,      # Reduz LR pela metade
-            patience=5,      # Espera 5 epochs sem melhora
+            factor=0.1,      # Reduz LR pela metade
+            patience=10,      # Espera 5 epochs sem melhora
         
             min_lr=0.001
         )
