@@ -242,12 +242,12 @@ class Encoder(nn.Module):
             self.relu
         )
         self.conv2 = nn.Sequential(
-            nn.Conv3d(8, 8, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm3d(8),
+            nn.Conv3d(8, 16, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm3d(16),
             self.relu
         )
         self.conv3 = nn.Sequential(
-            nn.Conv3d(8, embedding_dim, kernel_size=3, stride=2, padding=1),
+            nn.Conv3d(16, embedding_dim, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm3d(embedding_dim),
             self.relu
         )
@@ -264,13 +264,13 @@ class Decoder(nn.Module):
         super().__init__()
         self.relu = LeakyReLU6(negative_slope=0.2, max_value=6.0)
         self.deconv1 = nn.Sequential(
-            nn.ConvTranspose3d(embedding_dim, 8, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm3d(8),
+            nn.ConvTranspose3d(embedding_dim, 16, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm3d(16),
             self.relu
         )
         self.deconv2 = nn.Sequential(
-            nn.ConvTranspose3d(8, 8, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm3d(8),
+            nn.ConvTranspose3d(16, 8, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm3d(16),
             self.relu
         )
         self.deconv3 = nn.ConvTranspose3d(8, 3, kernel_size=4, stride=2, padding=1)
