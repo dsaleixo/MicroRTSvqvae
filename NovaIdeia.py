@@ -270,7 +270,7 @@ class Decoder(nn.Module):
         )
         self.deconv2 = nn.Sequential(
             nn.ConvTranspose3d(16, 8, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm3d(16),
+            nn.BatchNorm3d(8),
             self.relu
         )
         self.deconv3 = nn.ConvTranspose3d(8, 3, kernel_size=4, stride=2, padding=1)
