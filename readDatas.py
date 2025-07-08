@@ -31,7 +31,7 @@ class ReadDatas():
                     cont+=1
                     if cont%100==0:
                           print(cont//100)
-                    loaded_data = np.load('./datas3/'+arq,allow_pickle=True))
+                    loaded_data = np.load('./datas3/'+arq,allow_pickle=True)
                     shape = loaded_data.shape
                     #print(shape,len(dados))
                     aux = [ loaded_data]
