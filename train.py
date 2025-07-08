@@ -178,7 +178,7 @@ def validation(model, val_loader: DataLoader, device='cuda',):
     for batch in val_loader:
         x = batch.to(device)
 
-        reconstructions, vq_loss, _,_,_ = model(x,11200)
+        reconstructions, vq_loss, _,_,_ = model(x,11)
         reconstruction_loss = F.mse_loss(reconstructions, x)
         loss_jesus = closest_palette_loss(reconstructions, x,palette)
         total_loss = reconstruction_loss +loss_jesus
