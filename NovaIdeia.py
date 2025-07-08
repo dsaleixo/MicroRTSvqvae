@@ -360,24 +360,21 @@ class NovaIDEIA(nn.Module):
         from torch.optim import Adam
         from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-        optimizer = Adam(
+        from torch.optim import AdamW
+        from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+
+        optimizer = AdamW(
             self.parameters(),
-            lr=3e-4,           # Learning rate base
-            betas=(0.9, 0.95), # Momentos suaves
-            weight_decay=1e-6  # L2 regularization
+            lr=3e-3,             # taxa base
+            betas=(0.9, 0.95),   # como no seu setup anterior
+            weight_decay=1e-4    # pode aumentar um pouco aqui
         )
 
-        from torch.optim.lr_scheduler import CyclicLR
-
-
-
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        scheduler = CosineAnnealingWarmRestarts(
             optimizer,
-            mode="min",      # ou "max", depende da métrica
-            factor=0.5,      # Reduz LR pela metade
-            patience=10,      # Espera 5 epochs sem melhora
-        
-            min_lr=0.1
+            T_0=10,              # número de epochs para primeiro ciclo
+            T_mult=2,            # dobra o ciclo a cada reinício
+            eta_min=1e-6         # menor learning rate
         )
                 
 
