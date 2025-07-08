@@ -220,10 +220,22 @@ class VectorQuantizerEMA(nn.Module):
         print()
     #utils.weight_norm
 import torch.nn.utils as utils
+
+
+
+class LeakyReLU6(nn.Module):
+    def __init__(self, negative_slope: float = 0.2, max_value: float = 6.0):
+        super().__init__()
+        self.leaky_relu = nn.LeakyReLU(negative_slope)
+        self.max_value = max_value
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.clamp(self.leaky_relu(x), max=self.max_value)
+
 class Encoder(nn.Module):
     def __init__(self, embedding_dim: int):
         super().__init__()
-        self.relu = nn.ReLU6()
+        self.relu = LeakyReLU6(negative_slope=0.2, max_value=6.0)
         self.conv1 = nn.Sequential(
             nn.Conv3d(3, 8, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm3d(8),
@@ -250,7 +262,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, embedding_dim: int):
         super().__init__()
-        self.relu = nn.ReLU6()
+        self.relu = LeakyReLU6(negative_slope=0.2, max_value=6.0)
         self.deconv1 = nn.Sequential(
             nn.ConvTranspose3d(embedding_dim, 8, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm3d(8),
