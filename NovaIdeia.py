@@ -223,32 +223,51 @@ import torch.nn.utils as utils
 class Encoder(nn.Module):
     def __init__(self, embedding_dim: int):
         super().__init__()
-        self.conv1 = nn.Conv3d(in_channels=3, out_channels=8, kernel_size=4, stride=2, padding=1)
-        self.conv2 = nn.Conv3d(in_channels=8, out_channels=8, kernel_size=4, stride=2, padding=1)
-        self.conv4 = nn.Conv3d(in_channels=8, out_channels=embedding_dim, kernel_size=3, stride=1, padding=1)
         self.relu = nn.ReLU6()
+        self.conv1 = nn.Sequential(
+            nn.Conv3d(3, 8, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm3d(8),
+            self.relu
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv3d(8, 8, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm3d(8),
+            self.relu
+        )
+        self.conv3 = nn.Sequential(
+            nn.Conv3d(8, embedding_dim, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm3d(embedding_dim),
+            self.relu
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.relu(self.conv1(x))
-        x = self.relu(self.conv2(x))
-        x = self.relu(self.conv4(x))
-        return  x
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        return x
+
 
 class Decoder(nn.Module):
     def __init__(self, embedding_dim: int):
         super().__init__()
-        self.deconv1 = nn.ConvTranspose3d(in_channels=embedding_dim, out_channels=8, kernel_size=4, stride=2, padding=1)
-        self.deconv3 = nn.ConvTranspose3d(in_channels=8, out_channels=8, kernel_size=4, stride=2, padding=1)
-        self.deconv4 = nn.ConvTranspose3d(in_channels=8, out_channels=3, kernel_size=3, stride=1, padding=1)
         self.relu = nn.ReLU6()
-        self.patial_dropout3d = nn.Dropout3d(p=0.05)
+        self.deconv1 = nn.Sequential(
+            nn.ConvTranspose3d(embedding_dim, 8, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm3d(8),
+            self.relu
+        )
+        self.deconv2 = nn.Sequential(
+            nn.ConvTranspose3d(8, 8, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm3d(8),
+            self.relu
+        )
+        self.deconv3 = nn.ConvTranspose3d(8, 3, kernel_size=4, stride=2, padding=1)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.relu(self.deconv1(x))
- 
-        x = self.relu(self.deconv3(x))
-      
-        x = self.deconv4(x)
-        return  x
+        x = self.deconv1(x)
+        x = self.deconv2(x)
+        x = self.deconv3(x)
+        return x
 
 class VectorQuantizer(nn.Module):
     def __init__(self, num_embeddings: int, embedding_dim: int, commitment_cost: float = 0.25):
@@ -346,7 +365,7 @@ class NovaIDEIA(nn.Module):
             factor=0.1,      # Reduz LR pela metade
             patience=10,      # Espera 5 epochs sem melhora
         
-            min_lr=0.001
+            min_lr=0.1
         )
                 
 
