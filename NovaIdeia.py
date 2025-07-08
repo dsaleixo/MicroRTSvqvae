@@ -350,7 +350,7 @@ class NovaIDEIA(nn.Module):
 
         optimizer = Adam(
             self.parameters(),
-            lr=3e-3,           # Learning rate base
+            lr=3e-4,           # Learning rate base
             betas=(0.9, 0.95), # Momentos suaves
             weight_decay=1e-6  # L2 regularization
         )
@@ -362,7 +362,7 @@ class NovaIDEIA(nn.Module):
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
             mode="min",      # ou "max", depende da métrica
-            factor=0.1,      # Reduz LR pela metade
+            factor=0.5,      # Reduz LR pela metade
             patience=10,      # Espera 5 epochs sem melhora
         
             min_lr=0.1

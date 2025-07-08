@@ -298,7 +298,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                  model.comparaEncoderQuant(marchReal.to(device))
                  nextSalve = nextSalve+20
 
-            print(epoch,total_loss_epoch,totalLossVal,perplexity, used_codes,vq_loss_epoch)
+            print(epoch,total_loss_epoch,totalLossVal,perplexity, used_codes,vq_loss_epoch,current_lr)
             wandb.log({
                 "Train/Total Loss": total_loss_epoch,
                 "Train/Recon Loss": recon_loss_epoch,
