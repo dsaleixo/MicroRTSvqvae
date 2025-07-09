@@ -365,10 +365,10 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     palette=palette.to(device)
     import os
-    '''
+   
     wandb.init(
     project="VQVAE",
-    name = "REduz mais",
+    name = "REduz mais2",
     config={
          
       
@@ -377,7 +377,7 @@ if __name__ == "__main__":
         "learning_rate": 0.001
         }
     )
- 
+    '''
     frames = []
 
     # Suponha que video_data seja torch tensor (T, C, H, W)
