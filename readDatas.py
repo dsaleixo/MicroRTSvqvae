@@ -21,7 +21,7 @@ class ReadDatas():
 
 
     def readDatas(size,device):
-        dados = []
+        dados = [ ]
         folder_path = Path('./datas3/')
         arquivos =  [f.name for f in folder_path.iterdir() if f.is_file()]
         print(len(arquivos))
@@ -46,6 +46,35 @@ class ReadDatas():
         for i in range(total_size):
             dados[i] = torch.tensor(dados[i],dtype=torch.float).permute(1, 0, 2, 3)
         return dados
+
+
+    def readDatasVal(size,device):
+        dados = [np.load("resultado.npy")[:size]]
+        folder_path = Path('./dataValidation/')
+        arquivos =  [f.name for f in folder_path.iterdir() if f.is_file()]
+        print(len(arquivos))
+        cont=0
+        for arq in sorted(arquivos):
+  
+                    cont+=1
+                    
+                    loaded_data = np.load('./dataValidation/'+arq,allow_pickle=True)
+                    shape = loaded_data.shape
+                    print(arq,shape)
+                    #print(shape,len(dados))
+                    aux = [ loaded_data]
+                    for _ in range(size-shape[0]):
+                        aux.append( np.expand_dims(loaded_data[-1].copy(), axis=0))
+
+                    loaded_data2  = np.concatenate(aux, axis=0)
+                    loaded_data2 = loaded_data2[0:size,:,:,:]
+                    
+                    dados.append(loaded_data2)
+        total_size = len(dados)  # Suponha que temos 100 amostras
+        for i in range(total_size):
+            dados[i] = torch.tensor(dados[i],dtype=torch.float).permute(1, 0, 2, 3)
+        return torch.stack(dados)
+
 
 if __name__ == "__main__":
      datas = ReadDatas.readDatas(64)

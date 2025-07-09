@@ -335,6 +335,12 @@ class NovaIDEIA(nn.Module):
         self.decoder = Decoder(embedding_dim=self.embedding_dim)
 
 
+    def getFeature(self,x):
+        self.eval()
+        z = self.encoder(x)
+        quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
+        return codes
+
     def comparaEncoderQuant(self,x):
         self.eval()
         

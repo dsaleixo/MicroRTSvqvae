@@ -10,6 +10,8 @@ from readDatas import ReadDatas
 import numpy as np
 import os
 
+from similary import SimilaridadeCos, SimilaridadeExata
+
 os.environ["WANDB_API_KEY"] = "e6dd69e5ba37b74ef8d3ef0fa9dd28a33e4eeb6e"
 
 
@@ -167,7 +169,12 @@ def gerarVideo(model, name,marchReal):
 
 
 
-
+def normalize(values: list[float]) -> list[float]:
+    min_val = min(values)
+    max_val = max(values)
+    if max_val == min_val:
+        return [0.0 for _ in values]  # evita divisão por zero
+    return [(x - min_val) / (max_val - min_val) for x in values]
 
 def validation(model, val_loader: DataLoader, device='cuda',): 
     model.eval()
@@ -195,6 +202,27 @@ def validation(model, val_loader: DataLoader, device='cuda',):
     return total_loss_epoch, recon_loss_epoch,loss_jesus_epoch ,vq_loss_epoch 
 
 
+def testLS(model,datasLS):
+    model.eval()
+    codes =model.getFeature(datasLS.to(device))
+    n = codes.shape[0]
+    exact = SimilaridadeExata()
+    simExact = []
+    for i in range(1,n):
+        sim = exact.get(codes[0],codes[i])
+        simExact.append(float(sim))
+  
+    simExact=normalize(simExact)
+    print("simExact = ",simExact)
+    cos = SimilaridadeCos(model)
+    simCos = []
+    for i in range(1,n):
+        sim = cos.get(codes[0],codes[i])
+        simCos.append(float(sim))
+  
+    simCos=normalize(simCos)
+    print("SimCos = ",simCos)
+   
 def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader,marchReal, device='cuda'):
 
         model.to(device)
@@ -276,27 +304,28 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
               "rl"   :current_lr    
              })
 
-            if bestTrain>loss_jesus_epoch and epoch>50:
+            if bestTrain>loss_jesus_epoch and epoch>20:
                 bestTrain=loss_jesus_epoch
                 torch.save(model.state_dict(), "BestTrainModel.pth")
                 wandb.save("BestTrainModel.pth")
-                gerarVideo(model,"BestTrain",marchReal)
+                gerarVideo(model,"BestTrain",marchReal[0])
 
-            if bestVal >jesusLossVal and epoch>50:
+            if bestVal >jesusLossVal and epoch>20:
                 bestVal=jesusLossVal
                 torch.save(model.state_dict(), f"BestTEstModelBest.pth")
                 torch.save(model.state_dict(), f"BestTEstModel{epoch}.pth")
                 wandb.save("BestTEstModelBest.pth")
                 wandb.save(f"BestTEstModel{epoch}.pth")
-                gerarVideo(model,"BestTest",marchReal)
+                gerarVideo(model,"BestTest",marchReal[0])
                 wandb.log({"Updade":1})
             else:
                  wandb.log({"Updade":0})
             if nextSalve==epoch:
-                 gerarVideo(model,"Actual",marchReal)
+                 gerarVideo(model,"Actual",marchReal[0])
                  model.vq.printCodeBook()
-                 model.comparaEncoderQuant(marchReal.to(device))
+                 model.comparaEncoderQuant(marchReal[0].to(device))
                  nextSalve = nextSalve+20
+                 testLS(model,marchReal)
 
             print(epoch,total_loss_epoch,totalLossVal,perplexity, used_codes,vq_loss_epoch,current_lr)
             wandb.log({
@@ -336,7 +365,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     palette=palette.to(device)
     import os
-
+    '''
     wandb.init(
     project="VQVAE",
     name = "REduz mais",
@@ -348,7 +377,7 @@ if __name__ == "__main__":
         "learning_rate": 0.001
         }
     )
-    '''
+ 
     frames = []
 
     # Suponha que video_data seja torch tensor (T, C, H, W)
@@ -366,7 +395,7 @@ if __name__ == "__main__":
     print(f"Using device: {device}")
     '''
     sizeVideo =128
-
+    
     datas = ReadDatas.readDatas(sizeVideo,device)
     print("load complete",len(datas) )
     datas = datas
@@ -379,21 +408,21 @@ if __name__ == "__main__":
     val_loader = DataLoader(val_set, batch_size=32, )
  
     exemplo = np.load("resultado.npy")[:sizeVideo]
+ 
+   
 
 
+  
+    marchReal = ReadDatas.readDatasVal(sizeVideo,device)
 
 
-    marchReal = torch.tensor(exemplo).float()
-    print(marchReal[0][0])
-
-    marchReal = marchReal.permute(1,0,2,3).unsqueeze(0)
     
-    salva("RealVideo",marchReal.squeeze())
+    #salva("RealVideo",marchReal[0])
     
 
     
     model = NovaIDEIA().to(device)
- 
+    testLS(model,marchReal)
     loopTrain(model, 10000, train_loader, val_loader,marchReal, device)
 
     
