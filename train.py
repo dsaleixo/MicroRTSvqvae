@@ -221,9 +221,9 @@ def testLS(model,datasLS):
         simCos.append(float(sim))
     simCos=normalize(simCos)
     indices = [str(x) for x in range(len(simCos))]
-    tabelaCos = wandb.Table(data=[[r, v] for r, v in zip(simCos, indices)], columns=["rótulo", "valor"])
+    tabelaCos = wandb.Table(data=[[r, v] for r, v in zip(indices,simCos )], columns=["rótulo", "valor"])
     graficoCos = wandb.plot.bar(tabelaCos, "rótulo", "valor", title="Gráfico de Barras")
-    tabelaExact = wandb.Table(data=[[r, v] for r, v in zip(simExact, indices)], columns=["rótulo", "valor"])
+    tabelaExact = wandb.Table(data=[[r, v] for r, v in zip(indices,simExact)], columns=["rótulo", "valor"])
     graficoExact = wandb.plot.bar(tabelaExact, "rótulo", "valor", title="Gráfico de Barras")
 
     wandb.log({"LStest/Cos": graficoCos,
