@@ -213,15 +213,24 @@ def testLS(model,datasLS):
         simExact.append(float(sim))
   
     simExact=normalize(simExact)
-    print("simExact = ",simExact)
+    
     cos = SimilaridadeCos(model)
     simCos = []
     for i in range(1,n):
         sim = cos.get(codes[0],codes[i])
         simCos.append(float(sim))
-  
     simCos=normalize(simCos)
-    print("SimCos = ",simCos)
+    indices = [str(x) for x in range(len(simCos))]
+    tabelaCos = wandb.Table(data=[[r, v] for r, v in zip(simCos, indices)], columns=["rótulo", "valor"])
+    graficoCos = wandb.plot.bar(tabelaCos, "rótulo", "valor", title="Gráfico de Barras")
+    tabelaExact = wandb.Table(data=[[r, v] for r, v in zip(simExact, indices)], columns=["rótulo", "valor"])
+    graficoExact = wandb.plot.bar(tabelaExact, "rótulo", "valor", title="Gráfico de Barras")
+
+    wandb.log({"LStest/Cos": graficoCos,
+              "LStest/Exact": graficoExact}
+              )
+  
+  
    
 def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader,marchReal, device='cuda'):
 
