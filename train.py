@@ -159,7 +159,7 @@ def salva(name,out):
     wandb.log({name: wandb.Video("Gifs/"+name+'.gif', format="gif")})
 def gerarVideo(model, name,marchReal):
     model.eval()
-    marchReal=marchReal.to(device)
+    marchReal=marchReal.unsqueeze(0).to(device)
     print("saida",marchReal.shape)
     out=model(marchReal,1000)[0][0]
     salva(name+"_Pure",out)
@@ -308,7 +308,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 bestTrain=loss_jesus_epoch
                 torch.save(model.state_dict(), "BestTrainModel.pth")
                 wandb.save("BestTrainModel.pth")
-                gerarVideo(model,"BestTrain",marchReal[0])
+                gerarVideo(model,"BestTrain",marchReal[0].)
 
             if bestVal >jesusLossVal and epoch>20:
                 bestVal=jesusLossVal
