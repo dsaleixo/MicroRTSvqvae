@@ -1,4 +1,5 @@
 
+from matplotlib import pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import random_split
@@ -221,14 +222,24 @@ def testLS(model,datasLS):
         simCos.append(float(sim))
     simCos=normalize(simCos)
     indices = [str(x) for x in range(len(simCos))]
-    tabelaCos = wandb.Table(data=[[r, v] for r, v in zip(indices,simCos )], columns=["rótulo", "valor"])
-    graficoCos = wandb.plot.bar(tabelaCos, "rótulo", "valor", title="Gráfico de Barras")
-    tabelaExact = wandb.Table(data=[[r, v] for r, v in zip(indices,simExact)], columns=["rótulo", "valor"])
-    graficoExact = wandb.plot.bar(tabelaExact, "rótulo", "valor", title="Gráfico de Barras")
+    # Gráfico Cos
+    plt.figure()
+    plt.bar(indices, simCos)
+    plt.title("SimCos - Gráfico de Barras")
+    plt.ylabel("Valor")
+    plt.xlabel("Rótulo")
+    wandb.log({"LStest/Cos": wandb.Image(plt)})
+    plt.close()
 
-    wandb.log({"LStest/Cos": graficoCos,
-              "LStest/Exact": graficoExact}
-              )
+    # Gráfico Exact
+    plt.figure()
+    plt.bar(indices, simExact)
+    plt.title("SimExact - Gráfico de Barras")
+    plt.ylabel("Valor")
+    plt.xlabel("Rótulo")
+    wandb.log({"LStest/Exact": wandb.Image(plt)})
+    plt.close()
+ 
   
   
    
@@ -377,7 +388,7 @@ if __name__ == "__main__":
    
     wandb.init(
     project="VQVAE",
-    name = "REduz mais2",
+    name = "CAde ocesar no proceder",
     config={
          
       
