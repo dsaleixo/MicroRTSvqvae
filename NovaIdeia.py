@@ -328,7 +328,7 @@ class NovaIDEIA(nn.Module):
     def __init__(self):
         super().__init__()
         self.embedding_dim = 16
-        self.num_embeddings = 64
+        self.num_embeddings = 32
 
         self.encoder = Encoder(embedding_dim=self.embedding_dim)
         self.vq = VectorQuantizerEMA(num_embeddings=self.num_embeddings, embedding_dim=self.embedding_dim)
@@ -373,7 +373,7 @@ class NovaIDEIA(nn.Module):
             self.parameters(),
             lr=3e-3,             # taxa base
             betas=(0.9, 0.95),   # como no seu setup anterior
-            weight_decay=1e-4    # pode aumentar um pouco aqui
+            weight_decay=1e-6    # pode aumentar um pouco aqui
         )
 
         scheduler = CosineAnnealingWarmRestarts(
