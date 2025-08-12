@@ -386,6 +386,17 @@ class NovaIDEIA(nn.Module):
 
         return optimizer, scheduler
 
+    def sera(self,x,a,b):
+        self.eval()
+        z = self.encoder(x)
+        quantized, vq_loss, codes, perplexity, used_codes = self.vq(z)
+        print(quantized.shape, codes.shape)
+ 
+        x_new = codes.clone()
+
+        x_new[codes == a] = b
+        x_new[codes == b] = a
+
     def forward(self, x,epoch):
         z = self.encoder(x)
         

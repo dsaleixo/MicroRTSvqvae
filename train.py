@@ -303,7 +303,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
    
                 loss_jesus = closest_palette_loss(reconstructions, x,palette)
                 loss2_norm = loss_jesus #/ loss_jesus.detach().mean()
-                total_loss =  loss_jesus + reconstruction_loss
+                total_loss =  loss_jesus #+ reconstruction_loss*0
                 #total_loss = reconstruction_loss#+vq_loss
                    
                 total_loss.backward()
@@ -388,7 +388,7 @@ if __name__ == "__main__":
    
     wandb.init(
     project="VQVAE",
-    name = "de volta",
+    name = "de volta2",
     config={
          
       
