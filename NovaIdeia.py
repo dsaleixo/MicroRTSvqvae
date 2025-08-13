@@ -371,9 +371,9 @@ class NovaIDEIA(nn.Module):
 
         optimizer = AdamW(
             self.parameters(),
-            lr=3e-3,             # taxa base
+            lr=3e-4,             # taxa base
             betas=(0.9, 0.95),   # como no seu setup anterior
-            weight_decay=1e-6    # pode aumentar um pouco aqui
+            weight_decay=0   # pode aumentar um pouco aqui
         )
 
         scheduler = CosineAnnealingWarmRestarts(
