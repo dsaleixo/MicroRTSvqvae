@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from InicialVQVAE import InitialVQVAE
 from InitialAutoEncoder import VideoAutoencoder
 from NovaIdeia import NovaIDEIA
+from NovaNovaIdeia import VideoVQVAETransformer
 from readDatas import ReadDatas
 import numpy as np
 import os
@@ -206,6 +207,7 @@ def validation(model, val_loader: DataLoader, device='cuda',):
 def testLS(model,datasLS):
     model.eval()
     codes =model.getFeature(datasLS.to(device))
+
     n = codes.shape[0]
     exact = SimilaridadeExata()
     simExact = []
@@ -342,7 +344,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                  wandb.log({"Updade":0})
             if nextSalve==epoch:
                  gerarVideo(model,"Actual",marchReal[0])
-                 model.vq.printCodeBook()
+                 model._vq.printCodeBook()
                  model.comparaEncoderQuant(marchReal[0].unsqueeze(0).to(device))
                  nextSalve = nextSalve+20
                  testLS(model,marchReal)
@@ -388,7 +390,7 @@ if __name__ == "__main__":
    
     wandb.init(
     project="VQVAE",
-    name = "de volta2",
+    name = "improviso",
     config={
          
       
@@ -441,7 +443,7 @@ if __name__ == "__main__":
     
 
     
-    model = NovaIDEIA().to(device)
+    model = VideoVQVAETransformer().to(device)
     testLS(model,marchReal)
     loopTrain(model, 10000, train_loader, val_loader,marchReal, device)
 
