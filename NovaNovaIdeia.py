@@ -246,43 +246,68 @@ class VideoEncoderTemporalPool(nn.Module):
 # =========================
 # Video Decoder Temporal (vetorizado + tgt aprendível)
 # =========================
+# =========================
+# Video Decoder Temporal (AUTOREGRESSIVO)
+# =========================
 class VideoDecoderTemporal(nn.Module):
     def __init__(self, d_model: int, nhead: int, num_layers: int, out_ch: int, max_len: int = 10000):
         super().__init__()
         dec_layer = nn.TransformerDecoderLayer(d_model=d_model, nhead=nhead, batch_first=True)
         self._decoder = nn.TransformerDecoder(dec_layer, num_layers=num_layers)
         self._pos_t = SinusoidalPositionalEncoding(d_model, max_len=max_len)
-        # Embedding aprendível para as posições do decoder (melhora sobre apenas PE)
         self._tgt_embed = nn.Embedding(max_len, d_model)
-        # Projeção para recurso de frame (substitui Identity)
         self._to_frame_feat = nn.Sequential(
-            nn.LayerNorm(d_model),
-            nn.Linear(d_model, d_model),
-            nn.GELU(),
+        nn.LayerNorm(d_model),
+        nn.Linear(d_model, d_model),
+        nn.GELU(),
         )
         self._frame_dec = FrameDecoder2D(d_model, out_ch)
         self._max_len = max_len
 
+
+    @staticmethod
+    def _causal_mask(T: int, device: torch.device) -> torch.Tensor:
+        # Triangular superior (True bloqueia)
+        return torch.triu(torch.ones(T, T, device=device, dtype=torch.bool), diagonal=1)
+
+
     def forward(self, z_tokens: torch.Tensor, T: int) -> torch.Tensor:
         """
-        z_tokens: (B, N, D) – memória do decoder
-        T: número de frames a reconstruir
+        Treinamento com teacher forcing + máscara causal.
+        z_tokens: (B, N, D)
         Returns: (B, C, T, 24, 24)
         """
         assert T <= self._max_len, f"T={T} excede max_len={self._max_len}"
         B, N, D = z_tokens.shape
-        positions = torch.arange(T, device=z_tokens.device)
-        tgt = self._tgt_embed(positions).unsqueeze(0).expand(B, T, D)
-        tgt = tgt + self._pos_t(T).unsqueeze(0).to(z_tokens.dtype).to(z_tokens.device)
-
-        dec = self._decoder(tgt=tgt, memory=z_tokens)  # (B, T, D)
-        dec = self._to_frame_feat(dec)  # (B, T, D)
-
-        # Vetorizado para decodificar todos os frames de uma vez
-        frames_bt = self._frame_dec(dec.reshape(B * T, D))  # (B*T, C, H, W)
-        C, H, W = frames_bt.shape[1:]  # out_ch, 24, 24
-        frames = frames_bt.view(B, T, C, H, W).permute(0, 2, 1, 3, 4)  # (B, C, T, H, W)
+        pos = torch.arange(T, device=z_tokens.device)
+        tgt = self._tgt_embed(pos).unsqueeze(0).expand(B, T, D)
+        tgt = tgt + self._pos_t(T).unsqueeze(0).to(z_tokens)
+        tgt_mask = self._causal_mask(T, z_tokens.device)
+        dec = self._decoder(tgt=tgt, memory=z_tokens, tgt_mask=tgt_mask) # (B, T, D)
+        dec = self._to_frame_feat(dec)
+        frames_bt = self._frame_dec(dec.reshape(B * T, D))
+        C, H, W = frames_bt.shape[1:]
+        frames = frames_bt.view(B, T, C, H, W).permute(0, 2, 1, 3, 4)
         return frames
+
+
+    @torch.no_grad()
+    def generate(self, z_tokens: torch.Tensor, T: int) -> torch.Tensor:
+        """Inferência autoregressiva (sem teacher forcing), gera 1 frame por passo."""
+        assert T <= self._max_len
+        B, N, D = z_tokens.shape
+        outputs = []
+        for t in range(T):
+            pos = torch.arange(t + 1, device=z_tokens.device)
+            tgt = self._tgt_embed(pos).unsqueeze(0).expand(B, t + 1, D)
+            tgt = tgt + self._pos_t(t + 1).unsqueeze(0).to(z_tokens)
+            tgt_mask = self._causal_mask(t + 1, z_tokens.device)
+            dec = self._decoder(tgt=tgt, memory=z_tokens, tgt_mask=tgt_mask)
+            dec = self._to_frame_feat(dec)
+            last_feat = dec[:, -1, :] # (B, D)
+            frame = self._frame_dec(last_feat) # (B, C, H, W)
+            outputs.append(frame.unsqueeze(2))
+        return torch.cat(outputs, dim=2) # (B, C, T, H, W)
 
 
 # =========================
