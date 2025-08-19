@@ -322,7 +322,7 @@ class VideoVQVAETransformer(nn.Module):
         nhead: int = 8,
         enc_layers: int = 2,
         dec_layers: int = 2,
-        num_tokens: int = 10,
+        num_tokens: int = 20,
         codebook_size: int = 512,
         beta: float = 0.25,
         max_len: int = 10000,
@@ -338,30 +338,25 @@ class VideoVQVAETransformer(nn.Module):
         z_q, indices, vq_loss = self._vq(z_tokens)  # (B, N, D), (B, N)
         return indices
 
-    def getOptimizer(self,):
- 
+    def getOptimizer(self, steps_per_epoch: int, epochs: int):
         from torch.optim import AdamW
-
-        from torch.optim import Adam
-        from torch.optim.lr_scheduler import ReduceLROnPlateau
-
-        from torch.optim import AdamW
-        from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+        from torch.optim.lr_scheduler import OneCycleLR
 
         optimizer = AdamW(
             self.parameters(),
-            lr=3e-4,             # taxa base
-            betas=(0.9, 0.95),   # como no seu setup anterior
-            weight_decay=0   # pode aumentar um pouco aqui
+            lr=1e-4,
+            betas=(0.9, 0.95),
+            weight_decay=0
         )
 
-        scheduler = CosineAnnealingWarmRestarts(
+        scheduler = OneCycleLR(
             optimizer,
-            T_0=10,              # número de epochs para primeiro ciclo
-            T_mult=2,            # dobra o ciclo a cada reinício
-            eta_min=1e-6         # menor learning rate
+            max_lr=3e-3,   # pico do ciclo
+            steps_per_epoch=steps_per_epoch,
+            epochs=epochs,
+            pct_start=0.1,  # 10% do tempo em warmup
+            anneal_strategy="cos"
         )
-                
 
         return optimizer, scheduler
 
