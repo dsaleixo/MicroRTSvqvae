@@ -390,7 +390,7 @@ if __name__ == "__main__":
    
     wandb.init(
     project="VQVAE",
-    name = "improviso",
+    name = "improviso vq neles",
     config={
          
       
