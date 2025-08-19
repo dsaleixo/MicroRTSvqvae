@@ -190,7 +190,7 @@ def validation(model, val_loader: DataLoader, device='cuda',):
         reconstructions, vq_loss, _,_,_ = model(x,11)
         reconstruction_loss = F.mse_loss(reconstructions, x)
         loss_jesus = closest_palette_loss(reconstructions, x,palette)
-        total_loss = reconstruction_loss +loss_jesus
+        total_loss = reconstruction_loss +loss_jesus+vq_loss*0.15
         #total_loss = reconstruction_loss# +loss_jesus
         if vq_loss!=None:
             vq_loss_epoch += vq_loss.item()
@@ -305,7 +305,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
    
                 loss_jesus = closest_palette_loss(reconstructions, x,palette)
                 loss2_norm = loss_jesus #/ loss_jesus.detach().mean()
-                total_loss =  loss_jesus + reconstruction_loss
+                total_loss =  loss_jesus + reconstruction_loss +vq_loss*0.15
                 #total_loss = reconstruction_loss#+vq_loss
                    
                 total_loss.backward()

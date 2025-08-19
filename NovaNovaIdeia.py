@@ -389,7 +389,7 @@ class VideoVQVAETransformer(nn.Module):
         """x: (B, C, T, 24, 24) -> recon, indices, vq_loss"""
         z_tokens = self._enc(x)  # (B, N, D)
         z_q, indices, vq_loss = self._vq(z_tokens)  # (B, N, D), (B, N)
-        recon = self._dec(z_tokens, x.shape[2])  # (B, C, T, 24, 24)
+        recon = self._dec(z_q, x.shape[2])  # (B, C, T, 24, 24)
         return recon,vq_loss, indices,0,0
 
 
