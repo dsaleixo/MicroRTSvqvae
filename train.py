@@ -390,7 +390,7 @@ if __name__ == "__main__":
    
     wandb.init(
     project="VQVAE",
-    name = "coe32 ",
+    name = "coe32Aam ",
     config={
          
       

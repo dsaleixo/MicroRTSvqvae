@@ -337,7 +337,7 @@ class VideoVQVAETransformer(nn.Module):
         z_tokens = self._enc(x)  # (B, N, D)
         z_q, indices, vq_loss = self._vq(z_tokens)  # (B, N, D), (B, N)
         return indices
-
+    '''
     def getOptimizer(self, steps_per_epoch: int=700, epochs: int=500):
         from torch.optim import AdamW
         from torch.optim.lr_scheduler import OneCycleLR
@@ -359,7 +359,19 @@ class VideoVQVAETransformer(nn.Module):
         )
 
         return optimizer, scheduler
+    '''
+    def getOptimizer(self):
+        from torch.optim import Adam
 
+        optimizer = Adam(
+            self.parameters(),
+            lr=1e-3,          # taxa bem maior para overfitting rápido
+            betas=(0.9, 0.999),
+            weight_decay=0    # SEM regularização
+        )
+
+        scheduler = None  # nada de ciclo, queremos overfit rápido
+        return optimizer, scheduler
     def comparaEncoderQuant(self,x):
         return
         self.eval()
