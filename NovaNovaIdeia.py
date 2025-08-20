@@ -323,7 +323,7 @@ class VideoVQVAETransformer(nn.Module):
         enc_layers: int = 2,
         dec_layers: int = 2,
         num_tokens: int = 20,
-        codebook_size: int = 512,
+        codebook_size: int = 32,
         beta: float = 0.25,
         max_len: int = 10000,
     ) -> None:
@@ -344,7 +344,7 @@ class VideoVQVAETransformer(nn.Module):
 
         optimizer = AdamW(
             self.parameters(),
-            lr=1e-4,
+            lr=3e-4,
             betas=(0.9, 0.95),
             weight_decay=0
         )
