@@ -338,7 +338,7 @@ class VideoVQVAETransformer(nn.Module):
         z_q, indices, vq_loss = self._vq(z_tokens)  # (B, N, D), (B, N)
         return indices
 
-    def getOptimizer(self, steps_per_epoch: int, epochs: int):
+    def getOptimizer(self, steps_per_epoch: int=700, epochs: int=500):
         from torch.optim import AdamW
         from torch.optim.lr_scheduler import OneCycleLR
 
