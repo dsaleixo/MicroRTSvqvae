@@ -560,13 +560,13 @@ class VideoVQVAETransformer(nn.Module):
         in_ch: int = 3,
         out_ch: int = 3,
         d_model: int = 32,
-        nhead: int = 2,
-        enc_layers: int = 2,
-        dec_layers: int = 2,
+        nhead: int = 1,
+        enc_layers: int = 1,
+        dec_layers: int = 1,
         num_tokens: int = 20,
-        codebook_size: int = 32,
+        codebook_size: int = 64,
         beta: float = 0.25,
-        max_len: int = 10000,
+        max_len: int = 1000,
     ) -> None:
         super().__init__()
         self._enc = VideoEncoderTemporalPool(in_ch, d_model, nhead, enc_layers, num_tokens)
