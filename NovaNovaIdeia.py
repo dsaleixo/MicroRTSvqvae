@@ -212,6 +212,31 @@ class FrameDecoder2D(nn.Module):
         f = self._unproj(x).view(x.size(0), 128, self._h_w, self._h_w)
         return self._deconv(f)
 
+class FrameCondEncoder2D(nn.Module):
+    """
+    Encoder leve para extrair embedding condicional de um frame gerado/ground-truth.
+    Mapeia (B, C, 24, 24) -> (B, D)
+    """
+    def __init__(self, in_ch: int, d_model: int):
+        super().__init__()
+        self._conv = nn.Sequential(
+            nn.Conv2d(in_ch, 32, 3, stride=2, padding=1),   # 24->12
+            nn.ReLU(inplace=True),
+            nn.Conv2d(32, 64, 3, stride=2, padding=1),     # 12->6
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 128, 3, stride=2, padding=1),    # 6->3
+            nn.ReLU(inplace=True),
+        )
+        self._h_w = 3
+        self._proj = nn.Linear(128 * self._h_w * self._h_w, d_model)
+        self._norm = nn.LayerNorm(d_model)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        f = self._conv(x)
+        f = f.flatten(1)
+        f = self._proj(f)
+        return self._norm(f)
+
 
 # =========================
 # Video Encoder Temporal (vetorizado)
@@ -249,6 +274,7 @@ class VideoEncoderTemporalPool(nn.Module):
 # =========================
 # Video Decoder Temporal (AUTOREGRESSIVO)
 # =========================
+'''
 class VideoDecoderTemporal(nn.Module):
     def __init__(self, d_model: int, nhead: int, num_layers: int, out_ch: int, max_len: int = 10000):
         super().__init__()
@@ -308,7 +334,222 @@ class VideoDecoderTemporal(nn.Module):
             frame = self._frame_dec(last_feat) # (B, C, H, W)
             outputs.append(frame.unsqueeze(2))
         return torch.cat(outputs, dim=2) # (B, C, T, H, W)
+'''
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Optional, Tuple
 
+class FrameCondEncoder2D(nn.Module):
+    """
+    Encoder leve para extrair embedding condicional de um frame gerado/ground-truth.
+    Mapeia (B, C, 24, 24) -> (B, D)
+    """
+    def __init__(self, in_ch: int, d_model: int):
+        super().__init__()
+        self._conv = nn.Sequential(
+            nn.Conv2d(in_ch, 32, 3, stride=2, padding=1),   # 24->12
+            nn.ReLU(inplace=True),
+            nn.Conv2d(32, 64, 3, stride=2, padding=1),     # 12->6
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 128, 3, stride=2, padding=1),    # 6->3
+            nn.ReLU(inplace=True),
+        )
+        self._h_w = 3
+        self._proj = nn.Linear(128 * self._h_w * self._h_w, d_model)
+        self._norm = nn.LayerNorm(d_model)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        f = self._conv(x)
+        f = f.flatten(1)
+        f = self._proj(f)
+        return self._norm(f)
+
+
+class VideoDecoderTemporalAR(nn.Module):
+    """
+    Decoder temporal autoregressivo com condicionamento no passo anterior.
+    - memory = z_tokens (B, N, D)
+    - target token t recebe: pos_enc(t) + tgt_embed(t) + cond(t)
+      onde cond(t) = proj(latente_{t-1})  OU  enc_frame(frame_{t-1})
+
+    Treino (forward):
+      - Se fornecer `teacher_frames` (B, C, T, H, W) e cond_mode="frame",
+        usa teacher-forcing no condicionamento (frame real t-1).
+      - Caso contrário, usa sempre os frames/latentes gerados autoregressivamente.
+
+    Inferência (generate):
+      - Sempre autoregressivo, usando o que já foi gerado.
+    """
+    def __init__(
+        self,
+        d_model: int,
+        nhead: int,
+        num_layers: int,
+        out_ch: int,
+        max_len: int,
+        cond_mode: str = "frame",   # "latent" ou "frame"
+        in_ch: int = 3               # necessário se cond_mode="frame"
+    ) -> None:
+        super().__init__()
+        assert cond_mode in ("latent", "frame"), "cond_mode deve ser 'latent' ou 'frame'"
+
+        dec_layer = nn.TransformerDecoderLayer(d_model=d_model, nhead=nhead, batch_first=True)
+        self._decoder = nn.TransformerDecoder(dec_layer, num_layers=num_layers)
+
+        self._pos_t = SinusoidalPositionalEncoding(d_model, max_len=max_len)
+        self._tgt_embed = nn.Embedding(max_len, d_model)
+
+        self._to_frame_feat = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model),
+            nn.GELU(),
+        )
+        self._frame_dec = FrameDecoder2D(d_model, out_ch)
+
+        self._max_len = max_len
+        self._cond_mode = cond_mode
+
+        # Projetor para condicionamento por latente do passo anterior
+        if self._cond_mode == "latent":
+            self._latent_proj = nn.Linear(d_model, d_model)
+
+        # Encoder leve para condicionamento por frame anterior
+        if self._cond_mode == "frame":
+            self._frame_cond_enc = FrameCondEncoder2D(in_ch=in_ch, d_model=d_model)
+
+    @staticmethod
+    def _causal_mask(T: int, device: torch.device) -> torch.Tensor:
+        return torch.triu(torch.ones(T, T, device=device, dtype=torch.bool), diagonal=1)
+
+    def _step_decode(
+        self,
+        memory: torch.Tensor,          # (B, N, D)
+        t: int,                        # passo atual (0..T-1)
+        base_tgt_seq: torch.Tensor,    # (B, t+1, D) sem condicionamento aplicado no token t
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Decodifica até o passo t (incluído), retorna:
+          - last_feat: (B, D) latente do passo t
+          - dec_seq:   (B, t+1, D) sequência decodificada
+        """
+        B, _, D = memory.shape
+        tgt_mask = self._causal_mask(t + 1, memory.device)
+
+        dec_seq = self._decoder(tgt=base_tgt_seq, memory=memory, tgt_mask=tgt_mask)  # (B, t+1, D)
+        last_feat = self._to_frame_feat(dec_seq[:, -1, :])                             # (B, D)
+        return last_feat, dec_seq
+
+    def forward(
+        self,
+        z_tokens: torch.Tensor,        # (B, N, D)
+        T: int,
+        teacher_frames: Optional[torch.Tensor] = None  # (B, C, T, H, W) opcional
+    ) -> torch.Tensor:
+        """
+        Treinamento com teacher forcing opcional para condicionamento por frame.
+        Retorna: (B, C, T, 24, 24)
+        """
+        assert T <= self._max_len, f"T={T} excede max_len={self._max_len}"
+        B, N, D = z_tokens.shape
+        device = z_tokens.device
+        dtype = z_tokens.dtype
+
+        frames_out: list[torch.Tensor] = []
+
+        # construímos a sequência tgt passo-a-passo para poder injetar condicionamento no token corrente
+        # manteremos o histórico de embeddings tgt (com condicionamento aplicado) para 0..t
+        tgt_seq: Optional[torch.Tensor] = None
+        prev_latent: Optional[torch.Tensor] = None
+        prev_frame: Optional[torch.Tensor] = None
+
+        for t in range(T):
+            # token base (posição + embedding do índice temporal)
+            pos_vec = self._pos_t(t + 1).to(device=device, dtype=dtype)[-1]  # (D,) último passo
+            time_vec = self._tgt_embed(torch.tensor(t, device=device)).to(dtype)  # (D,)
+            token_t = pos_vec + time_vec  # (D,)
+
+            # adiciona condicionamento no passo t (se t>0)
+            if t > 0:
+                if self._cond_mode == "latent" and prev_latent is not None:
+                    token_t = token_t + self._latent_proj(prev_latent)  # (B, D)
+                elif self._cond_mode == "frame":
+                    # usa teacher frame se fornecido, senão o frame gerado anteriormente
+                    if teacher_frames is not None:
+                        prev_frame = teacher_frames[:, :, t - 1, :, :]  # (B, C, H, W)
+                    assert prev_frame is not None, "prev_frame não disponível para condicionamento"
+                    cond_vec = self._frame_cond_enc(prev_frame)         # (B, D)
+                    token_t = token_t + cond_vec                        # (B, D)
+
+            # garante batch na construção do token_t
+            if token_t.dim() == 1:  # (D,) -> expandir p/ (B, D)
+                token_t = token_t.unsqueeze(0).expand(B, -1)
+
+            # concatena ao tgt_seq
+            if tgt_seq is None:
+                tgt_seq = token_t.unsqueeze(1)               # (B, 1, D)
+            else:
+                tgt_seq = torch.cat([tgt_seq, token_t.unsqueeze(1)], dim=1)  # (B, t+1, D)
+
+            # decodifica até o passo t
+            last_feat, _ = self._step_decode(memory=z_tokens, t=t, base_tgt_seq=tgt_seq)
+            prev_latent = last_feat  # para condicionamento "latent"
+
+            # gera frame do passo t
+            frame_t = self._frame_dec(last_feat)  # (B, C, H, W)
+            frames_out.append(frame_t.unsqueeze(2))
+            prev_frame = frame_t  # para condicionamento "frame" se não houver teacher_frames
+
+        return torch.cat(frames_out, dim=2)  # (B, C, T, H, W)
+
+    @torch.no_grad()
+    def generate(self, z_tokens: torch.Tensor, T: int) -> torch.Tensor:
+        """
+        Inferência puramente autoregressiva (sem teacher forcing).
+        Retorna: (B, C, T, 24, 24)
+        """
+        assert T <= self._max_len
+        B, N, D = z_tokens.shape
+        device = z_tokens.device
+        dtype = z_tokens.dtype
+
+        frames_out: list[torch.Tensor] = []
+        tgt_seq: Optional[torch.Tensor] = None
+        prev_latent: Optional[torch.Tensor] = None
+        prev_frame: Optional[torch.Tensor] = None
+
+        for t in range(T):
+            pos_vec = self._pos_t(t + 1).to(device=device, dtype=dtype)[-1]
+            time_vec = self._tgt_embed(torch.tensor(t, device=device)).to(dtype)
+            token_t = pos_vec + time_vec  # (D,)
+
+            if t > 0:
+                if self._cond_mode == "latent" and prev_latent is not None:
+                    token_t = token_t + self._latent_proj(prev_latent)
+                elif self._cond_mode == "frame":
+                    assert prev_frame is not None, "prev_frame não disponível em geração"
+                    cond_vec = self._frame_cond_enc(prev_frame)
+                    token_t = token_t + cond_vec
+
+            if token_t.dim() == 1:
+                token_t = token_t.unsqueeze(0).expand(B, -1)
+
+            if tgt_seq is None:
+                tgt_seq = token_t.unsqueeze(1)
+            else:
+                tgt_seq = torch.cat([tgt_seq, token_t.unsqueeze(1)], dim=1)
+
+            t_mask = self._causal_mask(t + 1, device)
+            dec_seq = self._decoder(tgt=tgt_seq, memory=z_tokens, tgt_mask=t_mask)
+            dec_seq = self._to_frame_feat(dec_seq)
+            last_feat = dec_seq[:, -1, :]
+            frame_t = self._frame_dec(last_feat)
+
+            frames_out.append(frame_t.unsqueeze(2))
+            prev_latent = last_feat
+            prev_frame = frame_t
+
+        return torch.cat(frames_out, dim=2)  # (B, C, T, H, W)
 
 # =========================
 # Modelo completo
@@ -318,8 +559,8 @@ class VideoVQVAETransformer(nn.Module):
         self,
         in_ch: int = 3,
         out_ch: int = 3,
-        d_model: int = 256,
-        nhead: int = 8,
+        d_model: int = 32,
+        nhead: int = 2,
         enc_layers: int = 2,
         dec_layers: int = 2,
         num_tokens: int = 20,
@@ -330,7 +571,7 @@ class VideoVQVAETransformer(nn.Module):
         super().__init__()
         self._enc = VideoEncoderTemporalPool(in_ch, d_model, nhead, enc_layers, num_tokens)
         self._vq = VectorQuantizer(codebook_size, d_model,0.25)
-        self._dec = VideoDecoderTemporal(d_model, nhead, dec_layers, out_ch, max_len=max_len)
+        self._dec = VideoDecoderTemporalAR(d_model, nhead, dec_layers, out_ch, max_len=max_len)
 
     def getFeature(self,x):
         self.eval()
@@ -394,9 +635,12 @@ class VideoVQVAETransformer(nn.Module):
 
     def forward(self, x: torch.Tensor,i) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """x: (B, C, T, 24, 24) -> recon, indices, vq_loss"""
-        z_tokens = self._enc(x)  # (B, N, D)
-        z_q, indices, vq_loss = self._vq(z_tokens)  # (B, N, D), (B, N)
-        recon = self._dec(z_q, x.shape[2])  # (B, C, T, 24, 24)
+        # x: (B, C, T, 24, 24)
+        z_tokens = self._enc(x)
+        z_q, indices, vq_loss = self._vq(z_tokens)
+        # passar x como teacher_frames para cond_mode="frame"
+        recon = self._dec(z_q, T=x.shape[2], teacher_frames=x if self._dec._cond_mode=="frame" else None)
+    
         return recon,vq_loss, indices,0,0
 
 
