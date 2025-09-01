@@ -230,7 +230,7 @@ class ST(nn.Module):
         """x: (B, C, T, H, W) -> recon, indices, vq_loss"""
         z_tokens = self._enc(x)                        # (B, N, D)
         z_q, indices, vq_loss = self._vq(z_tokens)     # (B, N, D), (B, N)
-        recon = self._dec(z_tokens, x.shape[2])             # (B, C, T, H, W)
+        recon = self._dec(z_q, x.shape[2])             # (B, C, T, H, W)
         return recon, vq_loss, indices,0,0
 
 
