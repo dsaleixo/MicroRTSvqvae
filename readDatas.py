@@ -27,7 +27,7 @@ class ReadDatas():
         print(len(arquivos))
         cont=0
         for arq in arquivos:
-                  
+                   
                     cont+=1
                     if cont%100==0:
                           print(cont//100)

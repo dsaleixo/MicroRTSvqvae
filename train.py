@@ -13,6 +13,7 @@ import numpy as np
 import os
 
 from similary import SimilaridadeCos, SimilaridadeExata
+from simples_transformer import ST
 
 os.environ["WANDB_API_KEY"] = "e6dd69e5ba37b74ef8d3ef0fa9dd28a33e4eeb6e"
 
@@ -211,18 +212,22 @@ def testLS(model,datasLS):
     n = codes.shape[0]
     exact = SimilaridadeExata()
     simExact = []
+    print("SimExat")
     for i in range(1,n):
         sim = exact.get(codes[0],codes[i])
         simExact.append(float(sim))
-  
+        print(i,simExact[-1])
     simExact=normalize(simExact)
     
     cos = SimilaridadeCos(model)
     simCos = []
+    print("SimCos")
     for i in range(1,n):
         sim = cos.get(codes[0],codes[i])
         simCos.append(float(sim))
+        print(i,simCos[-1])
     simCos=normalize(simCos)
+    print("cos",simCos)
     indices = [str(x) for x in range(len(simCos))]
     # Gráfico Cos
     plt.figure()
@@ -390,7 +395,7 @@ if __name__ == "__main__":
    
     wandb.init(
     project="VQVAE",
-    name = "coe32AamPesao ",
+    name = "ST ",
     config={
          
       
@@ -443,8 +448,14 @@ if __name__ == "__main__":
     
 
     
-    model = VideoVQVAETransformer().to(device)
+    model = ST().to(device)
+   # state_dict = torch.load("./Best0.pth")
+        #state_dict = torch.load("./testsVQVAE/model/BestTrainModel.pth")
+        # 3. Preencha os pesos
+    #model.load_state_dict(state_dict)
     testLS(model,marchReal)
+    
+    
     loopTrain(model, 10000, train_loader, val_loader,marchReal, device)
 
     
