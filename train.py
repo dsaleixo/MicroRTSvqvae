@@ -395,7 +395,7 @@ if __name__ == "__main__":
    
     wandb.init(
     project="VQVAE",
-    name = "ST2 ",
+    name = "ST3 ",
     config={
          
       
