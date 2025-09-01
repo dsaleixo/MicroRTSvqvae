@@ -150,7 +150,7 @@ class ST(nn.Module):
         h: int = 24,
         w: int = 24,
         d_model: int = 20,
-        nhead: int = 8,
+        nhead: int = 4,
         enc_layers: int = 2,
         dec_layers: int = 2,
         num_tokens: int = 20,
