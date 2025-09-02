@@ -154,7 +154,7 @@ class ST(nn.Module):
         enc_layers: int = 2,
         dec_layers: int = 2,
         num_tokens: int = 128,
-        codebook_size: int = 32,
+        codebook_size: int = 512,
         beta: float = 0.25,
         max_len: int = 10000,
     ) -> None:
