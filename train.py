@@ -396,7 +396,7 @@ if __name__ == "__main__":
    
     wandb.init(
     project="VQVAE",
-    name = "Novo2_32_64",
+    name = "Novo2_32_64_32",
     config={
          
       
