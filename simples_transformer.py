@@ -149,7 +149,7 @@ class ST(nn.Module):
         out_ch: int = 3,
         h: int = 24,
         w: int = 24,
-        d_model: int = 20,
+        d_model: int = 256,
         nhead: int = 4,
         enc_layers: int = 2,
         dec_layers: int = 2,
