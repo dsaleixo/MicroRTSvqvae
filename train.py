@@ -14,6 +14,7 @@ import os
 
 from similary import SimilaridadeCos, SimilaridadeExata
 from simples_transformer import ST
+from st2 import ST2
 
 os.environ["WANDB_API_KEY"] = "e6dd69e5ba37b74ef8d3ef0fa9dd28a33e4eeb6e"
 
@@ -395,7 +396,7 @@ if __name__ == "__main__":
    
     wandb.init(
     project="VQVAE",
-    name = "ST3_128_co_e_512_moe256 ",
+    name = "Novo2",
     config={
          
       
@@ -448,7 +449,7 @@ if __name__ == "__main__":
     
 
     
-    model = ST().to(device)
+    model = ST2().to(device)
    # state_dict = torch.load("./Best0.pth")
         #state_dict = torch.load("./testsVQVAE/model/BestTrainModel.pth")
         # 3. Preencha os pesos

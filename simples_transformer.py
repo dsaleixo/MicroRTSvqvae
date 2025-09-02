@@ -96,7 +96,7 @@ class VideoEncoderNoSpatial(nn.Module):
         z, _ = self._attn(query=q, key=seq, value=seq)  # (B, N, D)
         return z
 
-
+'''
 # =========================
 # Video Decoder Temporal
 # =========================
@@ -136,6 +136,120 @@ class VideoDecoderNoSpatial(nn.Module):
 
         frames = self._out(dec).reshape(B, T, self._out_ch, self._h, self._w)
         frames = frames.permute(0, 2, 1, 3, 4)  # (B, C, T, H, W)
+        return frames
+'''
+
+class VideoDecoderNoSpatial(nn.Module):
+    def __init__(self, d_model: int, nhead: int, num_layers: int, out_ch: int, h: int, w: int, max_len: int = 10000):
+        super().__init__()
+        dec_layer = nn.TransformerDecoderLayer(d_model=d_model, nhead=nhead, batch_first=True)
+        self._decoder = nn.TransformerDecoder(dec_layer, num_layers=num_layers)
+        self._pos_t = SinusoidalPositionalEncoding(d_model, max_len=max_len)
+        self._tgt_embed = nn.Embedding(max_len, d_model)  # posição (opcional)
+        self._frame_enc = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(out_ch * h * w, d_model),
+            nn.ReLU(),
+            nn.LayerNorm(d_model),
+        )
+        self._z_proj = nn.Linear(d_model, d_model)
+        self._to_frame_feat = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model),
+            nn.GELU(),
+        )
+        self._out = nn.Sequential(
+            nn.Linear(d_model, out_ch * h * w),
+            nn.Sigmoid()
+        )
+        self._out_ch, self._h, self._w = out_ch, h, w
+        self._max_len = max_len
+
+    @staticmethod
+    def _causal_mask(T: int, device: torch.device) -> torch.Tensor:
+        # True blocks (upper triangular)
+        return torch.triu(torch.ones(T, T, device=device, dtype=torch.bool), diagonal=1)
+
+    def forward(
+        self,
+        z_tokens: torch.Tensor,
+        T: int,
+        start_frame: torch.Tensor | None = None,
+        teacher_forcing_frames: torch.Tensor | None = None
+    ) -> torch.Tensor:
+        """
+        z_tokens: (B, N, D)
+        T: number of frames to produce
+        start_frame: (B, C, H, W) initial frame used when generating autoregressively
+        teacher_forcing_frames: (B, C, T, H, W) if provided, uses GT previous frames as input (teacher forcing).
+        Returns: frames (B, C, T, H, W)
+        """
+        B, N, D = z_tokens.shape
+        device = z_tokens.device
+        frame_dim = self._out_ch * self._h * self._w
+
+        # Prepare z context: project per-batch and expand over time as memory in decoder
+        # We'll keep z_tokens as memory (B, N, D) for TransformerDecoder
+        z_mem = z_tokens  # memory
+
+        # Build "previous frame" embeddings for all T steps
+        if teacher_forcing_frames is not None:
+            # teacher_forcing_frames: (B, C, T, H, W)
+            assert teacher_forcing_frames.shape[2] >= T, "teacher_forcing_frames must have at least T frames"
+            # if no start_frame provided, take first frame as start
+            if start_frame is None:
+                start_frame = teacher_forcing_frames[:, :, 0]  # (B, C, H, W)
+            # build prev_frames sequence: prev_frames[:, 0] = start_frame,
+            # prev_frames[:, t] = teacher_forcing_frames[:, :, t-1] for t>0
+            prev_frames = torch.zeros(B, T, self._out_ch, self._h, self._w, device=device, dtype=teacher_forcing_frames.dtype)
+            prev_frames[:, 0] = start_frame
+            if T > 1:
+                prev_frames[:, 1:] = teacher_forcing_frames[:, :, : T - 1].contiguous()
+            # embed all prev_frames at once
+            prev_flat = prev_frames.view(B, T, -1)  # (B, T, frame_dim)
+            tgt_emb = self._frame_enc(prev_flat)    # (B, T, D)
+            # add positional encoding
+            tgt_emb = tgt_emb + self._pos_t(T).unsqueeze(0).to(dtype=tgt_emb.dtype, device=device)
+            tgt_mask = self._causal_mask(T, device)
+            dec = self._decoder(tgt=tgt_emb, memory=z_mem, tgt_mask=tgt_mask)  # (B, T, D)
+            dec = self._to_frame_feat(dec)
+            out = self._out(dec)  # (B, T, frame_dim)
+            frames = out.view(B, T, self._out_ch, self._h, self._w).permute(0, 2, 1, 3, 4)  # (B,C,T,H,W)
+            return frames
+
+        # --- generation mode (no teacher forcing) ---
+        # Require start_frame
+        assert start_frame is not None, "When not using teacher_forcing_frames you must provide start_frame"
+        # autoregressive loop (simple implementation)
+        generated = []
+        prev = start_frame  # (B, C, H, W)
+        h_prev: torch.Tensor | None = None
+
+        for t in range(T):
+            # Build tgt = embeddings of all generated/prevs so far to let TransformerDecoder attend causally.
+            # Simpler: run decoder on sequence of length t+1 built from start + generated prevs.
+            # Construct prev sequence: prev_seq[0] = start_frame, prev_seq[1] = generated[0], ...
+            if t == 0:
+                seq_frames = prev.unsqueeze(1)  # (B,1,C,H,W)
+            else:
+                seq = [start_frame] + generated  # list len t
+                seq_frames = torch.stack(seq, dim=1)  # (B, t, C, H, W)
+            seq_flat = seq_frames.view(B, seq_frames.shape[1], -1)  # (B, L, frame_dim)
+            tgt_emb = self._frame_enc(seq_flat)  # (B, L, D)
+            L = tgt_emb.shape[1]
+            tgt_emb = tgt_emb + self._pos_t(L).unsqueeze(0).to(dtype=tgt_emb.dtype, device=device)
+            tgt_mask = self._causal_mask(L, device)
+            dec = self._decoder(tgt=tgt_emb, memory=z_mem, tgt_mask=tgt_mask)  # (B, L, D)
+            dec = self._to_frame_feat(dec)
+            last_out = dec[:, -1, :]  # (B, D)
+            pred_flat = self._out(last_out)  # (B, frame_dim)
+            pred_frame = pred_flat.view(B, self._out_ch, self._h, self._w)  # (B, C, H, W)
+            # append to generated (but for next step we need prev to be this pred)
+            generated.append(pred_frame)
+            # For next step, prev is pred_frame; start_frame remains the same for seq building
+        # stack generated into (B, T, C, H, W) and permute -> (B, C, T, H, W)
+        gen_seq = torch.stack(generated, dim=1)  # (B, T, C, H, W)
+        frames = gen_seq.permute(0, 2, 1, 3, 4)  # (B, C, T, H, W)
         return frames
 
 
@@ -230,7 +344,7 @@ class ST(nn.Module):
         """x: (B, C, T, H, W) -> recon, indices, vq_loss"""
         z_tokens = self._enc(x)                        # (B, N, D)
         z_q, indices, vq_loss = self._vq(z_tokens)     # (B, N, D), (B, N)
-        recon = self._dec(z_q, x.shape[2])             # (B, C, T, H, W)
+        recon = self._dec(z_q, x.shape[2], start_frame=x[:, :, 0], teacher_forcing_frames=x)#self._dec(z_q, x.shape[2])             # (B, C, T, H, W)
         return recon, vq_loss, indices,0,0
 
 
