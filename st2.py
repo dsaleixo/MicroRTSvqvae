@@ -23,19 +23,67 @@ import torch.nn.functional as F
 # =========================
 # Positional Encoding
 # =========================
-class SinusoidalPositionalEncoding(nn.Module):
-    def __init__(self, d_model: int, max_len: int = 10000):
+import math
+import torch
+import torch.nn as nn
+
+class SinusoidalPositionalEncoding2D(nn.Module):
+    def __init__(self, d_model: int, h: int, w: int, max_len: int = 10000):
         super().__init__()
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float32).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
+        assert d_model % 4 == 0, "d_model precisa ser divisível por 4 para 2D PE"
+
+        self.h, self.w = h, w
+        self.d_model = d_model
+        self.max_len = max_len
+
+        pe = torch.zeros(d_model, h, w)
+
+        d_model_quarter = d_model // 4
+
+        # --- Y encoding (varia no eixo H) ---
+        div_term_y = torch.exp(
+            torch.arange(0, d_model_quarter, 2).float() * (-math.log(10000.0) / d_model_quarter)
+        )  # (D/8,)
+        pos_y = torch.arange(0, h, dtype=torch.float32).unsqueeze(1)  # (H,1)
+
+        y_sin = torch.sin(pos_y * div_term_y).transpose(0, 1).unsqueeze(2).expand(-1, h, w)
+        y_cos = torch.cos(pos_y * div_term_y).transpose(0, 1).unsqueeze(2).expand(-1, h, w)
+
+        pe[0:d_model_quarter:2, :, :] = y_sin
+        pe[1:d_model_quarter:2, :, :] = y_cos
+
+        # --- X encoding (varia no eixo W) ---
+        div_term_x = torch.exp(
+            torch.arange(0, d_model_quarter, 2).float() * (-math.log(10000.0) / d_model_quarter)
+        )  # (D/8,)
+        pos_x = torch.arange(0, w, dtype=torch.float32).unsqueeze(1)  # (W,1)
+
+        x_sin = torch.sin(pos_x * div_term_x).transpose(0, 1).unsqueeze(1).expand(-1, h, w)
+        x_cos = torch.cos(pos_x * div_term_x).transpose(0, 1).unsqueeze(1).expand(-1, h, w)
+
+        pe[d_model_quarter:2*d_model_quarter:2, :, :] = x_sin
+        pe[d_model_quarter+1:2*d_model_quarter:2, :, :] = x_cos
+
+        # --- Reduzimos espacialmente para 1D ---
+        pe = pe.mean(dim=(1, 2))  # (D,)
+
         self.register_buffer("pe", pe)
 
-    def forward(self, length: int) -> torch.Tensor:
-        return self.pe[:length]
+    def forward(self, T: int) -> torch.Tensor:
+        """
+        Retorna codificação temporal + espacial resumida
+        shape: (T, D)
+        """
+        pe_time = torch.zeros(T, self.d_model, device=self.pe.device)
+        pos = torch.arange(0, T, dtype=torch.float32, device=self.pe.device).unsqueeze(1)
+        div_term = torch.exp(
+            torch.arange(0, self.d_model, 2, device=self.pe.device).float()
+            * (-math.log(10000.0) / self.d_model)
+        )
+        pe_time[:, 0::2] = torch.sin(pos * div_term)
+        pe_time[:, 1::2] = torch.cos(pos * div_term)
 
+        return pe_time + self.pe.unsqueeze(0)
 
 # =========================
 # Vector Quantizer (non-EMA)
@@ -110,7 +158,7 @@ class VideoEncoderNoSpatial(nn.Module):
         self._proj = nn.Linear(in_ch * h * w, d_model)
         enc_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, batch_first=True)
         self._temporal_enc = nn.TransformerEncoder(enc_layer, num_layers=num_layers)
-        self._pos = SinusoidalPositionalEncoding(d_model)
+        self._pos = SinusoidalPositionalEncoding2D(d_model, h=h, w=w, max_len=10000)
         self._queries = nn.Parameter(torch.randn(1, num_tokens, d_model) * 0.02)
         self._attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=nhead, batch_first=True)
 
@@ -138,7 +186,7 @@ class VideoDecoderNoSpatial(nn.Module):
         dec_layer = nn.TransformerDecoderLayer(d_model=d_model, nhead=nhead, batch_first=True)
         self._decoder = nn.TransformerDecoder(dec_layer, num_layers=num_layers)
 
-        self._pos_t = SinusoidalPositionalEncoding(d_model, max_len=max_len)
+        self._pos_t = SinusoidalPositionalEncoding2D(d_model, h=h, w=w, max_len=max_len)
 
         # embedding de frames (flatten -> linear -> d_model)
         self._frame_enc = nn.Sequential(
@@ -265,7 +313,7 @@ class ST2(nn.Module):
         enc_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, batch_first=True)
         self._encoder = nn.TransformerEncoder(enc_layer, num_layers=enc_layers)
 
-        self._pos_t = SinusoidalPositionalEncoding(d_model, max_len=max_len)
+        self._pos_t = SinusoidalPositionalEncoding2D(d_model, h=h, w=w, max_len=max_len)
 
         # projeta vídeos para espaço latente (C,H,W -> D)
         self._video_proj = nn.Linear(in_ch * h * w, d_model)
