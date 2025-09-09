@@ -154,6 +154,54 @@ def quantize_colors(video: torch.Tensor, ) -> torch.Tensor:
 
     return quantized
 
+
+
+from PIL import Image
+import imageio
+
+def juntar_gifs_lado_a_lado(gifs: list[str], saida: str = "saida.gif") -> None:
+    # Carregar todos os gifs
+    leitores = [imageio.get_reader(g) for g in gifs]
+
+    # Número de frames será o mínimo entre os gifs (para evitar erro de comprimento)
+    num_frames = min([len(l) for l in leitores])
+
+    frames = []
+    for i in range(num_frames):
+        imagens = [Image.fromarray(l.get_data(i)) for l in leitores]  # <-- CORRIGIDO
+
+        # Opcional: redimensionar para mesma altura
+        alturas = [img.height for img in imagens]
+        altura_min = min(alturas)
+        imagens = [
+            img.resize((int(img.width * altura_min / img.height), altura_min), Image.Resampling.LANCZOS)
+            for img in imagens
+        ]
+
+        # Concatenar horizontalmente
+        largura_total = sum(img.width for img in imagens)
+        nova_img = Image.new("RGBA", (largura_total, altura_min))
+
+        x_offset = 0
+        for img in imagens:
+            nova_img.paste(img, (x_offset, 0))
+            x_offset += img.width
+
+        frames.append(nova_img)
+
+    # Salvar como gif animado
+    frames[0].save(
+        saida,
+        save_all=True,
+        append_images=frames[1:],
+        duration=100,  # tempo entre frames em ms
+        loop=0
+    )
+
+    # Fechar os leitores
+    for l in leitores:
+        l.close()
+
 def salva(name,out):
     video_np = (out.permute(1,2,3,0).detach().cpu().numpy() * 255).astype(np.uint8)
     frames=[]
@@ -161,16 +209,18 @@ def salva(name,out):
         frames.append(frame)
     print(len(frames),frames[0].shape)
     imageio.mimsave("Gifs/"+name+'.gif', frames, fps=12)
-    wandb.log({name: wandb.Video("Gifs/"+name+'.gif', format="gif")})
+    #wandb.log({name: wandb.Video("Gifs/"+name+'.gif', format="gif")})
 def gerarVideo(model, name,marchReal):
     model.eval()
     marchReal=marchReal.unsqueeze(0).to(device)
     print("saida",marchReal.shape)
     out=model(marchReal,1000)[0][0]
+    salva(name+"_Real",marchReal[0])
     salva(name+"_Pure",out)
 
     out2 = quantize_colors(out)
     salva(name+"_Clean",out2)
+    juntar_gifs_lado_a_lado(["Gifs/"+name+"_Real.gif", "Gifs/"+name+"_Pure.gif", "Gifs/"+name+"_Clean.gif"], name+".gif")
 
 
 
@@ -206,6 +256,13 @@ def validation(model, val_loader: DataLoader, device='cuda',):
         loss_jesus_epoch += loss_jesus.item()
     return total_loss_epoch, recon_loss_epoch,loss_jesus_epoch ,vq_loss_epoch 
 
+
+def printCode(model,datasLS):
+    model.eval()
+    codes =model.getFeature(datasLS.to(device))
+    n = codes.shape[0]
+    for i in range(n):
+        print(i, codes[i])
 
 def testLS(model,datasLS):
     model.eval()
@@ -252,190 +309,18 @@ def testLS(model,datasLS):
   
   
    
-def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader,marchReal, device='cuda'):
-
-        model.to(device)
-        '''
-        optimizer = Lion(self.parameters(), lr=5e-4, weight_decay=0.0)
-        
-        # Agendador de taxa de aprendizado
-   
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode="min",          # ou "max" se você monitorar uma métrica que cresce (tipo PSNR)
-            factor=0.5,
-            patience=30,
-            threshold=1e-4,
-            min_lr=1e-7,
-        
-        )
-        '''
-        optimizer,scheduler = model.getOptimizer()
-        bestTrain=100000000000000
-
-        totalLossVal, reconLossVal,jesusLossVal =baseline(model,val_loader)
-        wandb.run.summary["BaseLine"] = f"Total Loss: {totalLossVal:.4f} Recon Loss: {reconLossVal:.4f} Jesus Loss: {jesusLossVal:.4f}"
-       
-        totalLossVal, reconLossVal,jesusLossVal,vqLossVal =validation(model,val_loader)
-        wandb.log({
-                "Val/Total Loss": totalLossVal,
-                "Val/Recon Loss": reconLossVal,
-                "Val/Jesus Loss": jesusLossVal,
-                "Val/VQ Loss": vqLossVal,
-        })
-
-        bestVal = jesusLossVal
-        nextSalve = 10
-        for epoch in range(max_epochs):
-            model.train()
-            total_loss_epoch = 0.0
-            recon_loss_epoch = 0.0
-            vq_loss_epoch = 0.0
-            loss_jesus_epoch = 0.0
-
-
-            cont_batch=0
-            n_batch = len(train_loader)
-            for batch in train_loader:
-
-                if cont_batch>n_batch*0.15 and epoch<0:
-                    break
-                cont_batch+=1
-
-                x = batch.to(device)
-                
-                optimizer.zero_grad()
-                #reconstructions, vq_loss, _ = self(x)
-                reconstructions, vq_loss, _,perplexity, used_codes = model(x,epoch)
-                reconstruction_loss = F.mse_loss(reconstructions, x)
-                loss1_norm = reconstruction_loss / reconstruction_loss.detach().mean()
-   
-                loss_jesus = closest_palette_loss(reconstructions, x,palette)
-                loss2_norm = loss_jesus #/ loss_jesus.detach().mean()
-                total_loss =   loss_jesus+reconstruction_loss +vq_loss*5
-                #total_loss = reconstruction_loss#+vq_loss
-                   
-                total_loss.backward()
-                #torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-                optimizer.step()
-                if vq_loss!=None:
-                    vq_loss_epoch += vq_loss.item()
-                total_loss_epoch += total_loss.item()
-                recon_loss_epoch += reconstruction_loss.item()
-                
-                loss_jesus_epoch += loss_jesus.item()
-            totalLossVal, reconLossVal,jesusLossVal,vqLossVal =validation(model,val_loader,device)
-            #scheduler.step(totalLossVal)  # Atualiza o lr com o scheduler
-            
-            current_lr = 3 # scheduler.get_last_lr()[0]
-          
-            wandb.log({
-              "rl"   :current_lr    
-             })
-
-            if bestTrain>loss_jesus_epoch and epoch>20:
-                bestTrain=loss_jesus_epoch
-                torch.save(model.state_dict(), "BestTrainModel.pth")
-                wandb.save("BestTrainModel.pth")
-                gerarVideo(model,"BestTrain",marchReal[0])
-
-            if bestVal >jesusLossVal and epoch>20:
-                bestVal=jesusLossVal
-                torch.save(model.state_dict(), f"BestTEstModelBest.pth")
-                torch.save(model.state_dict(), f"BestTEstModel{epoch}.pth")
-                wandb.save("BestTEstModelBest.pth")
-                wandb.save(f"BestTEstModel{epoch}.pth")
-                gerarVideo(model,"BestTest",marchReal[0])
-                wandb.log({"Updade":1})
-            else:
-                 wandb.log({"Updade":0})
-            if nextSalve==epoch:
-                 gerarVideo(model,"Actual",marchReal[0])
-                 model._vq.printCodeBook()
-                 model.comparaEncoderQuant(marchReal[0].unsqueeze(0).to(device))
-                 nextSalve = nextSalve+20
-                 testLS(model,marchReal)
-
-            print(epoch,total_loss_epoch,totalLossVal,perplexity, used_codes,vq_loss_epoch,current_lr)
-            wandb.log({
-                "Train/Total Loss": total_loss_epoch,
-                "Train/Recon Loss": recon_loss_epoch,
-                "Train/Jesus Loss": loss_jesus_epoch,
-                "Train/VQ Loss": vq_loss_epoch,
-                "Train/VQ Perplexity": perplexity,
-                "Train/VQ Used Codes": used_codes,
-                
-                "Val/Total Loss": totalLossVal,
-                "Val/Recon Loss": reconLossVal,
-                "Val/Jesus Loss": jesusLossVal,
-                "Val/VQ Loss": vqLossVal,
-   
-            })
-
-            wandb.log({  
-                "Memória alocada": torch.cuda.memory_allocated() / 1024**2,
-                "Memória reservada (cache)": torch.cuda.memory_reserved() / 1024**2
-            })
-            torch.cuda.empty_cache()
-            wandb.log({  
-                "Memória alocada": torch.cuda.memory_allocated() / 1024**2,
-                "Memória reservada (cache)": torch.cuda.memory_reserved() / 1024**2
-            })
-    
-            
-
-        print("Treinamento finalizado.")
-
-
-
-
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     palette=palette.to(device)
     import os
    
-    wandb.init(
-    project="VQVAE",
-    name = "No teaching",
-    config={
-         
-      
-        "epochs": 10,
-        "batch_size": 32,
-        "learning_rate": 0.001
-        }
-    )
-    '''
-    frames = []
-
-    # Suponha que video_data seja torch tensor (T, C, H, W)
-    video_data = torch.rand(12, 3, 64, 64)
-
-    # Converter para numpy (T, H, W, C)
-    video_np = (video_data.numpy() * 255).astype(np.uint8)
-
-    for frame in video_np:
-        frames.append(frame)
-
-    imageio.mimsave('video.gif', frames, fps=12)
-
-    wandb.log({"meu_video": wandb.Video("video.gif", format="gif")})
-    print(f"Using device: {device}")
-    '''
+  
     sizeVideo =128
     
-    datas = ReadDatas.readDatas(sizeVideo,device)
-    print("load complete",len(datas) )
-    datas = datas
-    total_size = len(datas) 
-    train_size = int(0.8 * total_size)  # 80 amostras para treino
-    test_size = total_size - train_size  # 20 amostras para teste
-    train_set, val_set = random_split(datas, [train_size, test_size])
-
-    train_loader = DataLoader(train_set, batch_size=32)
-    val_loader = DataLoader(val_set, batch_size=32, )
- 
+    
+   
+    
     exemplo = np.load("resultado.npy")[:sizeVideo]
  
    
@@ -451,13 +336,11 @@ if __name__ == "__main__":
 
     
     model = STFirst().to(device)
-   # state_dict = torch.load("./Best0.pth")
-        #state_dict = torch.load("./testsVQVAE/model/BestTrainModel.pth")
+    state_dict = torch.load("./Best0.pth")
+        #state_dict = torch.load("./testsVQVAE/model/test.pth")
         # 3. Preencha os pesos
-    #model.load_state_dict(state_dict)
-    testLS(model,marchReal)
-    
-    
-    loopTrain(model, 10000, train_loader, val_loader,marchReal, device)
-
+    model.load_state_dict(state_dict)
+    printCode(model,marchReal)
+    for i in range(marchReal.shape[0]):
+        gerarVideo(model,"tests"+str(i),marchReal[i])
     
