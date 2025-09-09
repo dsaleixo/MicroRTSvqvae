@@ -187,7 +187,11 @@ class SinusoidalPositionalEncoding2D(nn.Module):
         pe_time[:, 1::2] = torch.cos(pos * div_term)
 
         return pe_time + self.pe.unsqueeze(0)
-
+    def printCodeBook(self) -> None:
+        # useful helper for debugging
+        return
+        for i in range(self.num_embeddings):
+            print(i, self.embedding[i])
 # =========================
 # Vector Quantizer (non-EMA)
 # returns also perplexity and used_codes for logging
