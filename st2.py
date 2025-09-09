@@ -27,6 +27,109 @@ import math
 import torch
 import torch.nn as nn
 
+
+class VectorQuantizerEMA(nn.Module):
+    def __init__(
+        self,
+        num_embeddings: int,
+        embedding_dim: int,
+        beta: float = 0.25,
+        decay: float = 0.99,
+        eps: float = 1e-5,
+    ):
+        """
+        EMA Vector Quantizer (sem gradiente direto nas embeddings).
+        Args:
+            num_embeddings: tamanho do codebook (K)
+            embedding_dim: dimensão de cada vetor no codebook (D)
+            beta: peso do commitment loss
+            decay: fator de decaimento para EMA
+            eps: estabilidade numérica
+        """
+        super().__init__()
+        self.embedding_dim = embedding_dim
+        self.num_embeddings = num_embeddings
+        self.beta = beta
+        self.decay = decay
+        self.eps = eps
+
+        # codebook inicializado uniformemente
+        embed = torch.randn(num_embeddings, embedding_dim)
+        bound = 1 / math.sqrt(embedding_dim)
+        embed = torch.empty(num_embeddings, embedding_dim).uniform_(-bound, bound)
+
+        self.register_buffer("embedding", embed)
+        self.register_buffer("cluster_size", torch.zeros(num_embeddings))
+        self.register_buffer("embed_avg", embed.clone())
+
+    def forward(
+        self, z: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Args:
+            z: (B, N, D) — tokens latentes
+        Returns:
+            z_q: quantized vectors (B, N, D)
+            indices: (B, N) índices no codebook
+            vq_loss: scalar
+            perplexity: scalar
+            used_codes: scalar
+        """
+        B, N, D = z.shape
+        assert D == self.embedding_dim
+
+        flat_z = z.reshape(B * N, D)  # (B*N, D)
+
+        # distâncias
+        dist = (
+            flat_z.pow(2).sum(1, keepdim=True)
+            - 2 * flat_z @ self.embedding.t()
+            + self.embedding.pow(2).sum(1)
+        )  # (B*N, K)
+
+        indices = torch.argmin(dist, dim=1)  # (B*N,)
+        z_q = self.embedding[indices].view(B, N, D)
+
+        # straight-through trick
+        z_q = z + (z_q - z).detach()
+
+        # commitment loss (apenas z recebe grad)
+        commit_loss = self.beta * F.mse_loss(z_q.detach(), z)
+        vq_loss = commit_loss
+
+        # EMA update — sem gradiente
+        if self.training:
+            encodings = F.one_hot(indices, self.num_embeddings).type(flat_z.dtype)
+            cluster_size = encodings.sum(0)
+
+            # EMA cluster size
+            self.cluster_size.data.mul_(self.decay).add_(cluster_size, alpha=1 - self.decay)
+
+            # EMA embed avg
+            embed_sum = encodings.t() @ flat_z
+            self.embed_avg.data.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
+
+            # normaliza
+            n = self.cluster_size.sum()
+            cluster_size = (
+                (self.cluster_size + self.eps) / (n + self.num_embeddings * self.eps) * n
+            )
+
+            embed_normalized = self.embed_avg / cluster_size.unsqueeze(1)
+            self.embedding.data.copy_(embed_normalized)
+
+        # métricas
+        with torch.no_grad():
+            avg_probs = (
+                F.one_hot(indices, self.num_embeddings).float().mean(0)
+            )  # (K,)
+            perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
+            used_codes = (avg_probs > 0).float().mean()
+
+        return z_q, indices.view(B, N), vq_loss, perplexity, used_codes
+
+
+
 class SinusoidalPositionalEncoding2D(nn.Module):
     def __init__(self, d_model: int, h: int, w: int, max_len: int = 10000):
         super().__init__()
@@ -329,7 +432,14 @@ class ST2(nn.Module):
         self._attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=nhead, batch_first=True)
 
         # Vector Quantizer (aplica-se sobre tokens agregados (B, num_tokens, d_model))
-        self._vq = VectorQuantizer(num_embeddings=codebook_size, embedding_dim=d_model, beta=beta)
+        #self._vq = VectorQuantizer(num_embeddings=codebook_size, embedding_dim=d_model, beta=beta)
+        self._vq = VectorQuantizerEMA(
+            num_embeddings=codebook_size,
+            embedding_dim=d_model,
+            beta=beta,
+            decay=0.99,   # pode ajustar (0.99–0.9999)
+        )
+
 
         # Decoder temporal (autoregressivo) que você já tem (sem convs)
         self._decoder = VideoDecoderNoSpatial(
