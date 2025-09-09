@@ -179,7 +179,6 @@ class VideoDecoderNoSpatial(nn.Module):
         B, N, D = z_tokens.shape
         device = z_tokens.device
         frame_dim = self._out_ch * self._h * self._w
-
         z_mem = z_tokens  # memory for TransformerDecoder
 
         # -------- teacher forcing path --------
@@ -187,17 +186,19 @@ class VideoDecoderNoSpatial(nn.Module):
             assert teacher_forcing_frames.shape[2] >= T, "teacher_forcing_frames must have at least T frames"
             prev_frames = torch.zeros(B, T, self._out_ch, self._h, self._w,
                                     device=device, dtype=teacher_forcing_frames.dtype)
+
             # primeira frame: start_frame ou primeiro GT
             if start_frame is None:
                 prev_frames[:, 0] = teacher_forcing_frames[:, :, 0]
             else:
-                prev_frames[:, 0] = start_frame
+                # se start_frame tiver múltiplos frames, pega o primeiro
+                prev_frames[:, 0] = start_frame[:, :, 0] if start_frame.ndim == 5 else start_frame
 
             if T > 1:
                 # teacher_forcing_frames[:, :, :T-1] -> prev_frames[:, 1:]
                 prev_frames[:, 1:] = teacher_forcing_frames.permute(0, 2, 1, 3, 4)[:, :T-1]
 
-            prev_flat = prev_frames.reshape(B, T, frame_dim)      # <<== reshape
+            prev_flat = prev_frames.reshape(B, T, frame_dim)
             tgt_emb = self._frame_enc(prev_flat)
             tgt_emb = tgt_emb + self._pos_t(T).unsqueeze(0).to(dtype=tgt_emb.dtype, device=device)
 
@@ -205,22 +206,26 @@ class VideoDecoderNoSpatial(nn.Module):
             dec = self._decoder(tgt=tgt_emb, memory=z_mem, tgt_mask=tgt_mask)
             dec = self._to_frame_feat(dec)
             out = self._out(dec)  # (B, T, frame_dim)
-            frames = out.reshape(B, T, self._out_ch, self._h, self._w).permute(0, 2, 1, 3, 4)  # <<== reshape
+            frames = out.reshape(B, T, self._out_ch, self._h, self._w).permute(0, 2, 1, 3, 4)
             return frames
 
         # -------- generation path (no teacher forcing) --------
         assert start_frame is not None, "You must provide start_frame if no teacher forcing"
-        generated: list[torch.Tensor] = []
 
-        for t in range(T):
-            if t == 0:
-                seq_frames = start_frame.unsqueeze(1)  # (B,1,C,H,W)
-            else:
-                # stack generated (list of (B,C,H,W)) -> (B,t,C,H,W)
-                seq_frames = torch.cat([start_frame.unsqueeze(1), torch.stack(generated, dim=1)], dim=1)  # (B,L,C,H,W)
+        # se start_frame tem múltiplos frames
+        if start_frame.ndim == 5:
+            T_init = start_frame.shape[2]
+            start_frames_list = [start_frame[:, :, i, :, :] for i in range(T_init)]
+        else:
+            start_frames_list = [start_frame]
 
+        generated: list[torch.Tensor] = start_frames_list.copy()
+
+        for t in range(len(start_frames_list), T):
+            # stack previous frames
+            seq_frames = torch.stack(generated, dim=1)  # (B, L, C, H, W)
             L = seq_frames.shape[1]
-            seq_flat = seq_frames.reshape(B, L, frame_dim)  # <<== reshape
+            seq_flat = seq_frames.reshape(B, L, frame_dim)
             tgt_emb = self._frame_enc(seq_flat)
             tgt_emb = tgt_emb + self._pos_t(L).unsqueeze(0).to(dtype=tgt_emb.dtype, device=device)
 
@@ -228,15 +233,14 @@ class VideoDecoderNoSpatial(nn.Module):
             dec = self._decoder(tgt=tgt_emb, memory=z_mem, tgt_mask=tgt_mask)
             dec = self._to_frame_feat(dec)
 
-            last_out = dec[:, -1, :]          # (B, D)
-            pred_flat = self._out(last_out)   # (B, frame_dim)
-            pred_frame = pred_flat.reshape(B, self._out_ch, self._h, self._w)  # <<== reshape
+            last_out = dec[:, -1, :]
+            pred_flat = self._out(last_out)        # (B, frame_dim)
+            pred_frame = pred_flat.reshape(B, self._out_ch, self._h, self._w)
             generated.append(pred_frame)
 
-        gen_seq = torch.stack(generated, dim=1)  # (B, T, C, H, W)
+        gen_seq = torch.stack(generated[len(start_frames_list):], dim=1)  # só pega frames gerados
         frames = gen_seq.permute(0, 2, 1, 3, 4)  # (B, C, T, H, W)
         return frames
-
 
 
 # =========================
