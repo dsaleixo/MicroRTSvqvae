@@ -239,7 +239,7 @@ def testLS(model,datasLS):
     plt.xlabel("Rótulo")
     wandb.log({"LStest/Cos": wandb.Image(plt)})
     plt.close()
-    '''
+   
     # Gráfico Exact
     plt.figure()
     plt.bar(indices, simExact)
@@ -248,7 +248,7 @@ def testLS(model,datasLS):
     plt.xlabel("Rótulo")
     wandb.log({"LStest/Exact": wandb.Image(plt)})
     plt.close()
- 
+    '''
   
   
    
