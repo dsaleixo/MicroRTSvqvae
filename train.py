@@ -397,7 +397,7 @@ if __name__ == "__main__":
    
     wandb.init(
     project="VQVAE",
-    name = "No teaching print coe",
+    name = "pequeno teste",
     config={
          
       
@@ -450,7 +450,7 @@ if __name__ == "__main__":
     
 
     
-    model = STFirst().to(device)
+    model = ST2().to(device)
    # state_dict = torch.load("./Best0.pth")
         #state_dict = torch.load("./testsVQVAE/model/BestTrainModel.pth")
         # 3. Preencha os pesos
