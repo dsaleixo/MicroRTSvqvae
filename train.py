@@ -190,7 +190,7 @@ def validation(model, val_loader: DataLoader, device='cuda',):
     for batch in val_loader:
         x = batch.to(device)
 
-        reconstructions, vq_loss, _,_,_ = model(x,11)
+        reconstructions, vq_loss, _,_,_ = model(x)
         reconstruction_loss = F.mse_loss(reconstructions, x)
         loss_jesus = closest_palette_loss(reconstructions, x,palette)
         total_loss = loss_jesus+reconstruction_loss +vq_loss*5
@@ -306,7 +306,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 
                 optimizer.zero_grad()
                 #reconstructions, vq_loss, _ = self(x)
-                reconstructions, vq_loss, _,perplexity, used_codes = model(x,epoch)
+                reconstructions, vq_loss, _,perplexity, used_codes = model(x)
                 reconstruction_loss = F.mse_loss(reconstructions, x)
                 loss1_norm = reconstruction_loss / reconstruction_loss.detach().mean()
    
