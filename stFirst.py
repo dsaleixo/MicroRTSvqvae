@@ -96,7 +96,7 @@ class VectorQuantizer(nn.Module):
 
     def printCodeBook(self) -> None:
         # useful helper for debugging
-        return
+      
         for i in range(self.num_embeddings):
             print(i, self.embedding.weight[i])
 
