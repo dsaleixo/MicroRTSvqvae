@@ -329,6 +329,7 @@ class STFirst(nn.Module):
             recon = self._decoder(z_q, T, start_frame=start_frame, teacher_forcing_frames=x)
         else:
             assert start_frame is not None, "start_frame required for autoregressive generation"
+            start_frame = x[:, :, :1, :, :]  # (B, C, 1, H, W)
             recon = self._decoder(z_q, T, start_frame=start_frame, teacher_forcing_frames=None)
 
         return recon, vq_loss,indices, perplexity, used_codes
