@@ -322,7 +322,8 @@ class STFirst(nn.Module):
         # vector quantization
         z_q, indices, vq_loss, perplexity, used_codes = self._vq(z_tokens)
         teacher_forcing = False
-        start_frame = vid_seq[:,0]
+        print("x",x.shape)
+        print("vid_seq",vid_seq.shape)
         # decoder
         if teacher_forcing :
             recon = self._decoder(z_q, T, start_frame=start_frame, teacher_forcing_frames=x)
