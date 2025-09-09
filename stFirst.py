@@ -222,7 +222,7 @@ class VideoDecoderNoSpatial(nn.Module):
                 seq_frames = torch.cat([start_frame.unsqueeze(1), torch.stack(generated, dim=1)], dim=1)  # (B,L,C,H,W)
 
             L = seq_frames.shape[1]
-            seq_flat = seq_frames.view(B, L, frame_dim)  # (B,L,frame_dim)
+            seq_flat = seq_frames.contiguous().view(B, L, frame_dim)
             tgt_emb = self._frame_enc(seq_flat)          # (B,L,D)
             tgt_emb = tgt_emb + self._pos_t(L).unsqueeze(0).to(dtype=tgt_emb.dtype, device=device)
 
