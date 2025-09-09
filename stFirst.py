@@ -191,7 +191,6 @@ class VideoDecoderNoSpatial(nn.Module):
             if start_frame is None:
                 prev_frames[:, 0] = teacher_forcing_frames[:, :, 0]
             else:
-                # se start_frame tiver múltiplos frames, pega o primeiro
                 prev_frames[:, 0] = start_frame[:, :, 0] if start_frame.ndim == 5 else start_frame
 
             if T > 1:
@@ -238,10 +237,10 @@ class VideoDecoderNoSpatial(nn.Module):
             pred_frame = pred_flat.reshape(B, self._out_ch, self._h, self._w)
             generated.append(pred_frame)
 
-        gen_seq = torch.stack(generated[len(start_frames_list):], dim=1)  # só pega frames gerados
-        frames = gen_seq.permute(0, 2, 1, 3, 4)  # (B, C, T, H, W)
+        # concatenar todos os frames (iniciais + gerados)
+        full_seq = torch.stack(generated, dim=1)  # (B, L_total, C, H, W)
+        frames = full_seq.permute(0, 2, 1, 3, 4)  # (B, C, T, H, W)
         return frames
-
 
 # =========================
 # ST full model (encoder -> vq -> autoregressive decoder)
