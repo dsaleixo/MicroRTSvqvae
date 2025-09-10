@@ -269,7 +269,7 @@ class VideoEncoderNoSpatial(nn.Module):
         self._pos = SinusoidalPositionalEncoding2D(d_model, h=h, w=w, max_len=10000)
         self._queries = nn.Parameter(torch.randn(1, num_tokens, d_model) * 0.02)
         self._attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=nhead, batch_first=True)
-        self._norm_out = nn.LayerNorm(d_model)
+        self._clip_norm = 3.0
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """x: (B, C, T, H, W) -> z: (B, N, D)"""
         B, C, T, H, W = x.shape
@@ -281,7 +281,9 @@ class VideoEncoderNoSpatial(nn.Module):
         # Pooling por queries
         q = self._queries.expand(B, -1, -1)  # (B, N, D)
         z, _ = self._attn(query=q, key=seq, value=seq)  # (B, N, D)
-        z = self._norm_out(z)
+        norms = z.norm(dim=-1, keepdim=True)  # (B, N, 1)
+        scale = (self._clip_norm / (norms + 1e-6)).clamp(max=1.0)
+        z = z * scale
         return z
 
 
