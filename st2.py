@@ -542,7 +542,7 @@ class ST2(nn.Module):
 
         optimizer = Adam(
             self.parameters(),
-            lr=1e-3,          # taxa bem maior para overfitting rápido
+            lr=1e-4,          # taxa bem maior para overfitting rápido
             betas=(0.9, 0.999),
             weight_decay=0    # SEM regularização
         )
