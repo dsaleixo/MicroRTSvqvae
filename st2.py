@@ -64,7 +64,6 @@ class VectorQuantizerEMA(nn.Module):
 
     def printCodeBook(self) -> None:
         # useful helper for debugging
-        return
         for i in range(self.num_embeddings):
             print(i, self.embedding[i])
 
@@ -270,7 +269,7 @@ class VideoEncoderNoSpatial(nn.Module):
         self._pos = SinusoidalPositionalEncoding2D(d_model, h=h, w=w, max_len=10000)
         self._queries = nn.Parameter(torch.randn(1, num_tokens, d_model) * 0.02)
         self._attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=nhead, batch_first=True)
-
+        self._norm_out = nn.LayerNorm(d_model)
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """x: (B, C, T, H, W) -> z: (B, N, D)"""
         B, C, T, H, W = x.shape
@@ -282,6 +281,7 @@ class VideoEncoderNoSpatial(nn.Module):
         # Pooling por queries
         q = self._queries.expand(B, -1, -1)  # (B, N, D)
         z, _ = self._attn(query=q, key=seq, value=seq)  # (B, N, D)
+        z = self._norm_out(z)
         return z
 
 
