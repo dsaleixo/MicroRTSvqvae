@@ -286,7 +286,7 @@ class VideoEncoderNoSpatial(nn.Module):
         self._queries = nn.Parameter(torch.randn(1, num_tokens, d_model) * 0.02)
         self._attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=nhead, batch_first=True)
         self._min_norm: float = 0.1
-        self._max_norm: float = 1.0
+        self._max_norm: float = 3.0
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """x: (B, C, T, H, W) -> z: (B, N, D)"""
         B, C, T, H, W = x.shape
@@ -432,8 +432,8 @@ class ST2(nn.Module):
         out_ch: int = 3,
         d_model: int = 16,
         nhead: int = 4,
-        enc_layers: int = 2,
-        dec_layers: int = 2,
+        enc_layers: int = 3,
+        dec_layers: int = 3,
         num_tokens: int = 32,
         codebook_size: int = 64,
         beta: float = 0.25,
