@@ -256,7 +256,23 @@ class VectorQuantizer(nn.Module):
         for i in range(self.num_embeddings):
             print(i, self.embedding.weight[i])
 
+def clip_norm_range(x: torch.Tensor, min_norm: float = 0.1, max_norm: float = 1.0) -> torch.Tensor:
+    """
+    Clipa a norma L2 dos vetores para o intervalo [min_norm, max_norm].
+    x: (B, N, D)
+    """
+    norms = x.norm(dim=-1, keepdim=True)  # (B, N, 1)
 
+    # evita divisão por zero
+    safe_norms = norms + 1e-6
+
+    # escala para max_norm se passou
+    scale = torch.ones_like(safe_norms)
+    scale = torch.where(safe_norms > max_norm, max_norm / safe_norms, scale)
+    # escala para min_norm se ficou muito baixo
+    scale = torch.where(safe_norms < min_norm, min_norm / safe_norms, scale)
+
+    return x * scale
 # =========================
 # Video Encoder Temporal (sem convoluções)
 # =========================
@@ -269,7 +285,8 @@ class VideoEncoderNoSpatial(nn.Module):
         self._pos = SinusoidalPositionalEncoding2D(d_model, h=h, w=w, max_len=10000)
         self._queries = nn.Parameter(torch.randn(1, num_tokens, d_model) * 0.02)
         self._attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=nhead, batch_first=True)
-        self._clip_norm = 1.0
+        min_norm: float = 0.1
+        max_norm: float = 1.0
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """x: (B, C, T, H, W) -> z: (B, N, D)"""
         B, C, T, H, W = x.shape
@@ -281,11 +298,17 @@ class VideoEncoderNoSpatial(nn.Module):
         # Pooling por queries
         q = self._queries.expand(B, -1, -1)  # (B, N, D)
         z, _ = self._attn(query=q, key=seq, value=seq)  # (B, N, D)
-        norms = z.norm(dim=-1, keepdim=True)  # (B, N, 1)
-        scale = (self._clip_norm / (norms + 1e-6)).clamp(max=1.0)
-        z = z * scale
-        return z
 
+
+        # clipping da norma entre [min_norm, max_norm]
+        norms = z.norm(dim=-1, keepdim=True)  # (B, N, 1)
+        safe_norms = norms + 1e-6
+        scale = torch.ones_like(safe_norms)
+        scale = torch.where(safe_norms > self._max_norm, self._max_norm / safe_norms, scale)
+        scale = torch.where(safe_norms < self._min_norm, self._min_norm / safe_norms, scale)
+        z = z * scale
+
+        return z
 
 # =========================
 # Video Decoder Temporal (autoregressivo, sem convs)
@@ -407,7 +430,7 @@ class ST2(nn.Module):
         self,
         in_ch: int = 3,
         out_ch: int = 3,
-        d_model: int = 32,
+        d_model: int = 12,
         nhead: int = 4,
         enc_layers: int = 2,
         dec_layers: int = 2,
