@@ -335,11 +335,18 @@ if __name__ == "__main__":
     
 
     
-    model = STFirst().to(device)
+    model = ST2().to(device)
+
+
+
     state_dict = torch.load("./Best0.pth")
         #state_dict = torch.load("./testsVQVAE/model/test.pth")
         # 3. Preencha os pesos
     model.load_state_dict(state_dict)
+    print("code")
+    for i in range(32):
+        print(model._vq.embedding[i])
+    print("video")
     printCode(model,marchReal)
     for i in range(marchReal.shape[0]):
         gerarVideo(model,"tests"+str(i),marchReal[i])

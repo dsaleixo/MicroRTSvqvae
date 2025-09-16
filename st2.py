@@ -34,8 +34,9 @@ class VectorQuantizerEMA(nn.Module):
         num_embeddings: int,
         embedding_dim: int,
         beta: float = 0.25,
-        decay: float = 0.99,
+        decay: float = 0.999,
         eps: float = 1e-5,
+        clamp_codebook: bool = True,  # novo parâmetro
     ):
         """
         EMA Vector Quantizer (sem gradiente direto nas embeddings).
@@ -45,6 +46,7 @@ class VectorQuantizerEMA(nn.Module):
             beta: peso do commitment loss
             decay: fator de decaimento para EMA
             eps: estabilidade numérica
+            clamp_codebook: se True, mantém os vetores do codebook em [-1, 1]
         """
         super().__init__()
         self.embedding_dim = embedding_dim
@@ -52,9 +54,9 @@ class VectorQuantizerEMA(nn.Module):
         self.beta = beta
         self.decay = decay
         self.eps = eps
+        self.clamp_codebook = clamp_codebook
 
         # codebook inicializado uniformemente
-        embed = torch.randn(num_embeddings, embedding_dim)
         bound = 1 / math.sqrt(embedding_dim)
         embed = torch.empty(num_embeddings, embedding_dim).uniform_(-bound, bound)
 
@@ -63,7 +65,6 @@ class VectorQuantizerEMA(nn.Module):
         self.register_buffer("embed_avg", embed.clone())
 
     def printCodeBook(self) -> None:
-        # useful helper for debugging
         for i in range(self.num_embeddings):
             print(i, self.embedding[i])
 
@@ -121,6 +122,11 @@ class VectorQuantizerEMA(nn.Module):
             )
 
             embed_normalized = self.embed_avg / cluster_size.unsqueeze(1)
+
+            # aplica restrição [-1, 1] se ativado
+            if self.clamp_codebook:
+                embed_normalized = torch.clamp(embed_normalized, -1.0, 1.0)
+
             self.embedding.data.copy_(embed_normalized)
 
         # métricas
@@ -132,7 +138,6 @@ class VectorQuantizerEMA(nn.Module):
             used_codes = (avg_probs > 0).float().mean()
 
         return z_q, indices.view(B, N), vq_loss, perplexity, used_codes
-
 
 
 class SinusoidalPositionalEncoding2D(nn.Module):
