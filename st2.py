@@ -442,7 +442,7 @@ class ST2(nn.Module):
         self,
         in_ch: int = 3,
         out_ch: int = 3,
-        d_model: int = 8,
+        d_model: int = 128,
         nhead: int = 4,
         enc_layers: int = 3,
         dec_layers: int = 3,
