@@ -282,7 +282,17 @@ def clip_norm_range(x: torch.Tensor, min_norm: float = 0.1, max_norm: float = 1.
 # Video Encoder Temporal (sem convoluções)
 # =========================
 class VideoEncoderNoSpatial(nn.Module):
-    def __init__(self, in_ch: int, h: int, w: int, d_model: int, nhead: int, num_layers: int, num_tokens: int):
+    def __init__(
+        self,
+        in_ch: int,
+        h: int,
+        w: int,
+        d_model: int,
+        nhead: int,
+        num_layers: int,
+        num_tokens: int,
+        squash: str = "tanh",  # "tanh" ou "clamp"
+    ):
         super().__init__()
         self._proj = nn.Linear(in_ch * h * w, d_model)
         enc_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, batch_first=True)
@@ -290,8 +300,8 @@ class VideoEncoderNoSpatial(nn.Module):
         self._pos = SinusoidalPositionalEncoding2D(d_model, h=h, w=w, max_len=10000)
         self._queries = nn.Parameter(torch.randn(1, num_tokens, d_model) * 0.02)
         self._attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=nhead, batch_first=True)
-        self._min_norm: float = 0.1
-        self._max_norm: float = 3.0
+        self._squash = squash
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """x: (B, C, T, H, W) -> z: (B, N, D)"""
         B, C, T, H, W = x.shape
@@ -304,14 +314,11 @@ class VideoEncoderNoSpatial(nn.Module):
         q = self._queries.expand(B, -1, -1)  # (B, N, D)
         z, _ = self._attn(query=q, key=seq, value=seq)  # (B, N, D)
 
-
-        # clipping da norma entre [min_norm, max_norm]
-        norms = z.norm(dim=-1, keepdim=True)  # (B, N, 1)
-        safe_norms = norms + 1e-6
-        scale = torch.ones_like(safe_norms)
-        scale = torch.where(safe_norms > self._max_norm, self._max_norm / safe_norms, scale)
-        scale = torch.where(safe_norms < self._min_norm, self._min_norm / safe_norms, scale)
-        z = z * scale
+        # squash em [-1, 1]
+        if self._squash == "tanh":
+            z = torch.tanh(z)
+        elif self._squash == "clamp":
+            z = torch.clamp(z, -1.0, 1.0)
 
         return z
 
