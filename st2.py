@@ -435,7 +435,7 @@ class ST2(nn.Module):
         enc_layers: int = 3,
         dec_layers: int = 3,
         num_tokens: int = 32,
-        codebook_size: int = 64,
+        codebook_size: int = 32,
         beta: float = 0.25,
         max_len: int = 10000,
         h: int = 24,
