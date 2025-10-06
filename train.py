@@ -219,8 +219,8 @@ def salva(name,out):
     print(len(frames),frames[0].shape)
     
     same_count = sum(
-    np.array_equal(frames[i], frames[i + 1])
-    for i in range(len(frames) - 1)
+        np.array_equal(frames[i], frames[i + 1])
+        for i in range(len(frames) - 1)
     )
     print(f"{same_count} frames idênticos de {len(frames)}")
     frames_pil = [Image.fromarray(f) for f in frames]
@@ -233,6 +233,7 @@ def salva(name,out):
         optimize=False,
 
     )
+    print("muito estranho",len(frames_pil))
     #imageio.mimsave("Gifs/"+name+'.gif', frames, fps=12)
     #wandb.log({name: wandb.Video("Gifs/"+name+'.gif', format="gif")})
 def gerarVideo(model, name,marchReal):
