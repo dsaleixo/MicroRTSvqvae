@@ -182,7 +182,8 @@ def juntar_gifs_lado_a_lado(gifs: list[str], saida: str = "saida.gif") -> None:
     print("num_frames",num_frames)
     frames = []
     for i in range(num_frames):
-        imagens = [Image.fromarray(l[i]) for l in gifs_frames]  # <-- CORRIGIDO
+        imagens = [Image.fromarray((l[i] * 255).astype(np.uint8) if l[i].dtype != np.uint8 else l[i]) for l in gifs_frames]
+
 
         # Opcional: redimensionar para mesma altura
         alturas = [img.height for img in imagens]
