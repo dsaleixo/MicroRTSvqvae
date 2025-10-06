@@ -205,7 +205,7 @@ def juntar_gifs_lado_a_lado(gifs: list[str], saida: str = "saida.gif") -> None:
     # Fechar os leitores
     for l in leitores:
         l.close()
-    wandb.log({saida: wandb.Video("Gifs/"+saida+'.gif', format="gif")})
+    wandb.log({saida: wandb.Video("Gifs/"+saida, format="gif")})
 
 def salva(name,out):
     out = out[:3, :, :, :] 
