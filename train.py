@@ -417,7 +417,7 @@ if __name__ == "__main__":
 
     wandb.init(
     project="VQVAE", mode="disabled",
-    name = "castelo infinito2 boa noite arrumano vq",
+    name = "eterno retorno",
     config={
          
       

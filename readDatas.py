@@ -28,7 +28,8 @@ class ReadDatas():
         cont=0
         for arq in arquivos:
                     if cont > 100:
-                          break
+                          #break
+                          pass
                     cont+=1
                     if cont%100==0:
                           print(cont//100)
