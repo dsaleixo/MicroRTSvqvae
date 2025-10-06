@@ -230,6 +230,7 @@ def gerarVideo(model, name,marchReal):
     marchReal=marchReal.unsqueeze(0).to(device)
     salva(name+"_Real",marchReal[0])
     out=model(marchReal,1000)[0][0]
+    print("gerarVideoau",out.shape)
     salva(name+"_Pure",out)
 
     out2 = quantize_colors(out)
