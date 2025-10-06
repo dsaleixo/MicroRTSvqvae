@@ -164,8 +164,8 @@ from PIL import Image
 import imageio
 
 def juntar_gifs_lado_a_lado(gifs: list[str], saida: str = "saida.gif") -> None:
-    # Carregar todos os gifs
-    
+    from PIL import Image, ImageSequence
+
     def ler_gif_completo(path):
         gif = Image.open(path)
         frames = []
@@ -177,15 +177,14 @@ def juntar_gifs_lado_a_lado(gifs: list[str], saida: str = "saida.gif") -> None:
 
     gifs_frames = [ler_gif_completo(g) for g in gifs]
 
-    # Número de frames será o mínimo entre os gifs (para evitar erro de comprimento)
+    # Número de frames será o mínimo entre os gifs
     num_frames = min([len(l) for l in gifs_frames])
-    print("num_frames",num_frames)
+    print("num_frames", num_frames)
     frames = []
     for i in range(num_frames):
-        imagens = [Image.fromarray((l[i] * 255).astype(np.uint8) if l[i].dtype != np.uint8 else l[i]) for l in gifs_frames]
+        imagens = [l[i] for l in gifs_frames]  # <-- simples, já é PIL.Image
 
-
-        # Opcional: redimensionar para mesma altura
+        # Redimensionar para mesma altura
         alturas = [img.height for img in imagens]
         altura_min = min(alturas)
         imagens = [
@@ -212,8 +211,6 @@ def juntar_gifs_lado_a_lado(gifs: list[str], saida: str = "saida.gif") -> None:
         duration=100,  # tempo entre frames em ms
         loop=0
     )
-
-
     wandb.log({saida: wandb.Video("Gifs/"+saida, format="gif")})
 
 def salva(name,out):
