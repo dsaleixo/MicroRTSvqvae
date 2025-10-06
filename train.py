@@ -408,7 +408,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 gerarVideo(model,"BestTrain",marchReal[0])
                 gerarVideoautoregressive(model,"BestTrainAR",marchReal[0])
                 name ="BestTrain"
-                juntar_gifs_lado_a_lado(["Gifs/"+name+"_Real.gif", "Gifs/"+name+"_Pure.gif", "Gifs/"+name+"_Clean.gif", "Gifs/"+name+"AR"+"_Pure.gif", "Gifs/"+name+"AR"+"_Clean.gif"], name+".gif")
+                juntar_gifs_lado_a_lado(["Gifs/"+name+"_Real.gif", "Gifs/"+name+"_Pure.gif", "Gifs/"+name+"_Clean.gif"], name+".gif")#, "Gifs/"+name+"AR"+"_Pure.gif", "Gifs/"+name+"AR"+"_Clean.gif"], name+".gif")
 
             if bestVal >jesusLossVal and epoch>20:
                 bestVal=jesusLossVal
