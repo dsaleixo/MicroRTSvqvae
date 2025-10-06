@@ -222,6 +222,7 @@ def salva(name,out):
         duration=83,  # ms por frame = 1/12s
         loop=0,
         optimize=False,
+        disposal=2, 
     )
     #imageio.mimsave("Gifs/"+name+'.gif', frames, fps=12)
     #wandb.log({name: wandb.Video("Gifs/"+name+'.gif', format="gif")})
