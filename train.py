@@ -214,6 +214,8 @@ def salva(name,out):
     for frame in video_np:
         frames.append(frame)
     print(len(frames),frames[0].shape)
+    same_count = sum(torch.equal(frames[i], frames[i+1]) for i in range(len(frames)-1))
+    print(f"{same_count} frames idênticos de {len(frames)}")
     frames_pil = [Image.fromarray(f) for f in frames]
     frames_pil[0].save(
         "Gifs/"+name+".gif",
@@ -233,7 +235,7 @@ def gerarVideo(model, name,marchReal):
     out=model(marchReal,1000)[0][0]
     print("gerarVideoau",out.shape)
     salva(name+"_Pure",out)
-
+        
     out2 = quantize_colors(out)
     salva(name+"_Clean",out2)
     
@@ -249,7 +251,7 @@ def gerarVideoautoregressive(model, name,marchReal):
 
     out2 = quantize_colors(out)
     print("gerarVideoautoregressive",out2.shape)
-    salva(name+"_Clean",out2)
+   
 
 
 
