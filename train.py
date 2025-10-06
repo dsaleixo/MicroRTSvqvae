@@ -225,7 +225,7 @@ def gerarVideo(model, name,marchReal):
 
     out2 = quantize_colors(out)
     salva(name+"_Clean",out2)
-    juntar_gifs_lado_a_lado(["Gifs/"+name+"_Real.gif", "Gifs/"+name+"_Pure.gif", "Gifs/"+name+"_Clean.gif"], name+".gif")
+    
 
 
 def gerarVideoautoregressive(model, name,marchReal):
@@ -406,7 +406,9 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 torch.save(model.state_dict(), "BestTrainModel.pth")
                 wandb.save("BestTrainModel.pth")
                 gerarVideo(model,"BestTrain",marchReal[0])
-                gerarVideoautoregressive(model,"BestTrain",marchReal[0])
+                gerarVideoautoregressive(model,"BestTrainAR",marchReal[0])
+                name ="BestTrain"
+                juntar_gifs_lado_a_lado(["Gifs/"+name+"_Real.gif", "Gifs/"+name+"_Pure.gif", "Gifs/"+name+"_Clean.gif"], "Gifs/"+name+"AR"+"_Pure.gif", "Gifs/"+name+"AR"+"_Clean.gif", name+".gif")
 
             if bestVal >jesusLossVal and epoch>20:
                 bestVal=jesusLossVal
@@ -415,7 +417,11 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 wandb.save("BestTEstModelBest.pth")
                 wandb.save(f"BestTEstModel{epoch}.pth")
                 gerarVideo(model,"BestTest",marchReal[0])
+                name ="BestTest"
                 gerarVideoautoregressive(model,"BestTestAR",marchReal[0])
+                juntar_gifs_lado_a_lado(["Gifs/"+name+"_Real.gif", "Gifs/"+name+"_Pure.gif", "Gifs/"+name+"_Clean.gif"], "Gifs/"+name+"AR"+"_Pure.gif", "Gifs/"+name+"AR"+"_Clean.gif", name+".gif")
+
+                
                 wandb.log({"Updade":1})
             else:
                  wandb.log({"Updade":0})
