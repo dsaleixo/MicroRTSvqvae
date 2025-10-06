@@ -16,7 +16,7 @@ from similary import SimilaridadeCos, SimilaridadeExata
 from simples_transformer import ST
 from st2 import ST2
 from stFirst import STFirst
-
+from PIL import Image
 os.environ["WANDB_API_KEY"] = "e6dd69e5ba37b74ef8d3ef0fa9dd28a33e4eeb6e"
 
 
@@ -214,7 +214,16 @@ def salva(name,out):
     for frame in video_np:
         frames.append(frame)
     print(len(frames),frames[0].shape)
-    imageio.mimsave("Gifs/"+name+'.gif', frames, fps=12)
+    frames_pil = [Image.fromarray(f) for f in frames]
+    frames_pil[0].save(
+        "Gifs/"+name+".gif",
+        save_all=True,
+        append_images=frames_pil[1:],
+        duration=83,  # ms por frame = 1/12s
+        loop=0,
+        optimize=False,
+    )
+    #imageio.mimsave("Gifs/"+name+'.gif', frames, fps=12)
     #wandb.log({name: wandb.Video("Gifs/"+name+'.gif', format="gif")})
 def gerarVideo(model, name,marchReal):
     model.eval()
