@@ -237,6 +237,7 @@ def gerarVideoautoregressive(model, name,marchReal):
     salva(name+"_Pure",out)
 
     out2 = quantize_colors(out)
+    print("gerarVideoautoregressive",out2.shape)
     salva(name+"_Clean",out2)
 
 
