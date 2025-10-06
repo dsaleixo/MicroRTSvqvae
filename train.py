@@ -169,7 +169,7 @@ def juntar_gifs_lado_a_lado(gifs: list[str], saida: str = "saida.gif") -> None:
 
     # Número de frames será o mínimo entre os gifs (para evitar erro de comprimento)
     num_frames = min([len(l) for l in leitores])
-
+    print("num_frames",num_frames)
     frames = []
     for i in range(num_frames):
         imagens = [Image.fromarray(l.get_data(i)) for l in leitores]  # <-- CORRIGIDO
