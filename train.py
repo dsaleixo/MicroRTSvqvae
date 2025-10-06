@@ -214,7 +214,11 @@ def salva(name,out):
     for frame in video_np:
         frames.append(frame)
     print(len(frames),frames[0].shape)
-    same_count = sum(torch.equal(frames[i], frames[i+1]) for i in range(len(frames)-1))
+    
+    same_count = sum(
+    np.array_equal(frames[i], frames[i + 1])
+    for i in range(len(frames) - 1)
+    )
     print(f"{same_count} frames idênticos de {len(frames)}")
     frames_pil = [Image.fromarray(f) for f in frames]
     frames_pil[0].save(
