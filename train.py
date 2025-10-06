@@ -356,6 +356,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 torch.save(model.state_dict(), "BestTrainModel.pth")
                 wandb.save("BestTrainModel.pth")
                 gerarVideo(model,"BestTrain",marchReal[0])
+                gerarVideoautoregressive(model,"BestTrain",marchReal[0])
 
             if bestVal >jesusLossVal and epoch>20:
                 bestVal=jesusLossVal
@@ -364,6 +365,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 wandb.save("BestTEstModelBest.pth")
                 wandb.save(f"BestTEstModel{epoch}.pth")
                 gerarVideo(model,"BestTest",marchReal[0])
+                gerarVideoautoregressive(model,"BestTestAR",marchReal[0])
                 wandb.log({"Updade":1})
             else:
                  wandb.log({"Updade":0})
