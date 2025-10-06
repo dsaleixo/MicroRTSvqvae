@@ -182,7 +182,7 @@ def juntar_gifs_lado_a_lado(gifs: list[str], saida: str = "saida.gif") -> None:
     print("num_frames",num_frames)
     frames = []
     for i in range(num_frames):
-        imagens = [Image.fromarray(l.get_data(i)) for l in gifs_frames]  # <-- CORRIGIDO
+        imagens = [Image.fromarray(l[i]) for l in gifs_frames]  # <-- CORRIGIDO
 
         # Opcional: redimensionar para mesma altura
         alturas = [img.height for img in imagens]
@@ -212,9 +212,7 @@ def juntar_gifs_lado_a_lado(gifs: list[str], saida: str = "saida.gif") -> None:
         loop=0
     )
 
-    # Fechar os leitores
-    for l in leitores:
-        l.close()
+
     wandb.log({saida: wandb.Video("Gifs/"+saida, format="gif")})
 
 def salva(name,out):
