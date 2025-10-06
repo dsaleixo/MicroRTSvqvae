@@ -416,9 +416,9 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     palette=palette.to(device)
     import os
-
+    # mode="disabled",
     wandb.init(
-    project="VQVAE", mode="disabled",
+    project="VQVAE",
     name = "eterno retorno",
     config={
          
@@ -472,6 +472,6 @@ if __name__ == "__main__":
     testLS(model,marchReal)
     
     gerarVideoautoregressive(model,"BestTestAR",marchReal[0])
-    #loopTrain(model, 10000, train_loader, val_loader,marchReal, device)
+    loopTrain(model, 10000, train_loader, val_loader,marchReal, device)
 
   
