@@ -158,6 +158,55 @@ def quantize_colors(video: torch.Tensor, ) -> torch.Tensor:
 
     return quantized
 
+
+
+from PIL import Image
+import imageio
+
+def juntar_gifs_lado_a_lado(gifs: list[str], saida: str = "saida.gif") -> None:
+    # Carregar todos os gifs
+    leitores = [imageio.get_reader(g) for g in gifs]
+
+    # Número de frames será o mínimo entre os gifs (para evitar erro de comprimento)
+    num_frames = min([len(l) for l in leitores])
+
+    frames = []
+    for i in range(num_frames):
+        imagens = [Image.fromarray(l.get_data(i)) for l in leitores]  # <-- CORRIGIDO
+
+        # Opcional: redimensionar para mesma altura
+        alturas = [img.height for img in imagens]
+        altura_min = min(alturas)
+        imagens = [
+            img.resize((int(img.width * altura_min / img.height), altura_min), Image.Resampling.LANCZOS)
+            for img in imagens
+        ]
+
+        # Concatenar horizontalmente
+        largura_total = sum(img.width for img in imagens)
+        nova_img = Image.new("RGBA", (largura_total, altura_min))
+
+        x_offset = 0
+        for img in imagens:
+            nova_img.paste(img, (x_offset, 0))
+            x_offset += img.width
+
+        frames.append(nova_img)
+
+    # Salvar como gif animado
+    frames[0].save(
+        "Gifs/"+saida,
+        save_all=True,
+        append_images=frames[1:],
+        duration=100,  # tempo entre frames em ms
+        loop=0
+    )
+
+    # Fechar os leitores
+    for l in leitores:
+        l.close()
+    wandb.log({saida: wandb.Video("Gifs/"+saida+'.gif', format="gif")})
+
 def salva(name,out):
     out = out[:3, :, :, :] 
     video_np = (out.permute(1,2,3,0).detach().cpu().numpy() * 255).astype(np.uint8)
@@ -166,16 +215,17 @@ def salva(name,out):
         frames.append(frame)
     print(len(frames),frames[0].shape)
     imageio.mimsave("Gifs/"+name+'.gif', frames, fps=12)
-    wandb.log({name: wandb.Video("Gifs/"+name+'.gif', format="gif")})
+    #wandb.log({name: wandb.Video("Gifs/"+name+'.gif', format="gif")})
 def gerarVideo(model, name,marchReal):
     model.eval()
     marchReal=marchReal.unsqueeze(0).to(device)
-  
+    salva(name+"_Real",marchReal[0])
     out=model(marchReal,1000)[0][0]
     salva(name+"_Pure",out)
 
     out2 = quantize_colors(out)
     salva(name+"_Clean",out2)
+    juntar_gifs_lado_a_lado(["Gifs/"+name+"_Real.gif", "Gifs/"+name+"_Pure.gif", "Gifs/"+name+"_Clean.gif"], name+".gif")
 
 
 def gerarVideoautoregressive(model, name,marchReal):
