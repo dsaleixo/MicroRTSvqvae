@@ -27,7 +27,8 @@ class ReadDatas():
         print(len(arquivos))
         cont=0
         for arq in arquivos:
-                   
+                    if cont > 100:
+                          break
                     cont+=1
                     if cont%100==0:
                           print(cont//100)
@@ -40,7 +41,7 @@ class ReadDatas():
 
                     loaded_data2  = np.concatenate(aux, axis=0)
                     loaded_data2 = loaded_data2[0:size,:,:,:]
-                    
+                    print(loaded_data2.shape)
                     dados.append(loaded_data2)
         total_size = len(dados)  # Suponha que temos 100 amostras
         for i in range(total_size):
@@ -60,7 +61,7 @@ class ReadDatas():
                     
                     loaded_data = np.load('./dataValidation/'+arq,allow_pickle=True)
                     shape = loaded_data.shape
-                    print(arq,shape)
+                    #print(arq,shape)
                     #print(shape,len(dados))
                     aux = [ loaded_data]
                     for _ in range(size-shape[0]):

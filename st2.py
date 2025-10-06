@@ -140,6 +140,27 @@ class VectorQuantizerEMA(nn.Module):
         return z_q, indices.view(B, N), vq_loss, perplexity, used_codes
 
 
+class SinusoidalPositionalEncoding1D(nn.Module):
+    def __init__(self, d_model: int, max_len: int = 10000):
+        super().__init__()
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float32).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2, dtype=torch.float32) * (-math.log(10000.0) / d_model))
+
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+
+        # (1, max_len, d_model) para broadcast com batch e seq_len
+        self.register_buffer("pe", pe.unsqueeze(0), persistent=False)
+
+    def forward(self, T: int) -> torch.Tensor:
+        """
+        Retorna tensor (1, T, D) com codificação posicional até T posições.
+        """
+        return self.pe[:, :T, :]
+
+
+'''
 class SinusoidalPositionalEncoding2D(nn.Module):
     def __init__(self, d_model: int, h: int, w: int, max_len: int = 10000):
         super().__init__()
@@ -197,7 +218,7 @@ class SinusoidalPositionalEncoding2D(nn.Module):
         pe_time[:, 1::2] = torch.cos(pos * div_term)
 
         return pe_time + self.pe.unsqueeze(0)
-
+'''
 # =========================
 # Vector Quantizer (non-EMA)
 # returns also perplexity and used_codes for logging
@@ -297,7 +318,7 @@ class VideoEncoderNoSpatial(nn.Module):
         self._proj = nn.Linear(in_ch * h * w, d_model)
         enc_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, batch_first=True)
         self._temporal_enc = nn.TransformerEncoder(enc_layer, num_layers=num_layers)
-        self._pos = SinusoidalPositionalEncoding2D(d_model, h=h, w=w, max_len=10000)
+        self._pos = SinusoidalPositionalEncoding1D(d_model)
         self._queries = nn.Parameter(torch.randn(1, num_tokens, d_model) * 0.02)
         self._attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=nhead, batch_first=True)
         self._squash = squash
@@ -307,7 +328,7 @@ class VideoEncoderNoSpatial(nn.Module):
         B, C, T, H, W = x.shape
         frames = x.permute(0, 2, 1, 3, 4).reshape(B, T, C * H * W)  # (B, T, C*H*W)
         feats = self._proj(frames)                                  # (B, T, D)
-        feats = feats + self._pos(T).unsqueeze(0).to(feats.device)
+        #feats = feats + self._pos(T).unsqueeze(0).to(feats.device)
         seq = self._temporal_enc(feats)                             # (B, T, D)
 
         # Pooling por queries
@@ -332,7 +353,7 @@ class VideoDecoderNoSpatial(nn.Module):
         dec_layer = nn.TransformerDecoderLayer(d_model=d_model, nhead=nhead, batch_first=True)
         self._decoder = nn.TransformerDecoder(dec_layer, num_layers=num_layers)
 
-        self._pos_t = SinusoidalPositionalEncoding2D(d_model, h=h, w=w, max_len=max_len)
+        self._pos_t = SinusoidalPositionalEncoding1D(d_model)
 
         # embedding de frames (flatten -> linear -> d_model)
         self._frame_enc = nn.Sequential(
@@ -395,13 +416,14 @@ class VideoDecoderNoSpatial(nn.Module):
 
             prev_flat = prev_frames.view(B, T, frame_dim)  # (B, T, frame_dim)
             tgt_emb = self._frame_enc(prev_flat)           # (B, T, D)
-            tgt_emb = tgt_emb + self._pos_t(T).unsqueeze(0).to(dtype=tgt_emb.dtype, device=device)
+            tgt_emb = tgt_emb + self._pos_t(T).to(tgt_emb.device)
 
             tgt_mask = self._causal_mask(T, device)
             dec = self._decoder(tgt=tgt_emb, memory=z_mem, tgt_mask=tgt_mask)  # (B, T, D)
             dec = self._to_frame_feat(dec)
             out = self._out(dec)  # (B, T, frame_dim)
             frames = out.view(B, T, self._out_ch, self._h, self._w).permute(0, 2, 1, 3, 4)
+     
             return frames
 
         # -------- generation path (no teacher forcing) --------
@@ -418,7 +440,7 @@ class VideoDecoderNoSpatial(nn.Module):
             L = seq_frames.shape[1]
             seq_flat = seq_frames.view(B, L, frame_dim)  # (B,L,frame_dim)
             tgt_emb = self._frame_enc(seq_flat)          # (B,L,D)
-            tgt_emb = tgt_emb + self._pos_t(L).unsqueeze(0).to(dtype=tgt_emb.dtype, device=device)
+            tgt_emb = tgt_emb + self._pos_t(L).to(tgt_emb.device)
 
             tgt_mask = self._causal_mask(L, device)
             dec = self._decoder(tgt=tgt_emb, memory=z_mem, tgt_mask=tgt_mask)  # (B,L,D)
@@ -442,10 +464,10 @@ class ST2(nn.Module):
         self,
         in_ch: int = 3,
         out_ch: int = 3,
-        d_model: int = 128,
+        d_model: int = 16,
         nhead: int = 4,
-        enc_layers: int = 3,
-        dec_layers: int = 3,
+        enc_layers: int = 2,
+        dec_layers: int = 2,
         num_tokens: int = 32,
         codebook_size: int = 32,
         beta: float = 0.25,
@@ -454,12 +476,12 @@ class ST2(nn.Module):
         w: int = 24,
     ) -> None:
         super().__init__()
-
+        self.out_ch=out_ch
         # Encoder temporal (sem convolução)
         enc_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, batch_first=True)
         self._encoder = nn.TransformerEncoder(enc_layer, num_layers=enc_layers)
 
-        self._pos_t = SinusoidalPositionalEncoding2D(d_model, h=h, w=w, max_len=max_len)
+        self._pos_t = SinusoidalPositionalEncoding1D(d_model)
 
         # projeta vídeos para espaço latente (C,H,W -> D)
         self._video_proj = nn.Linear(in_ch * h * w, d_model)
@@ -487,12 +509,12 @@ class ST2(nn.Module):
         # Decoder temporal (autoregressivo) que você já tem (sem convs)
         self._decoder = VideoDecoderNoSpatial(
             d_model=d_model, nhead=nhead, num_layers=dec_layers,
-            out_ch=out_ch, h=h, w=w, max_len=max_len
+            out_ch=3, h=h, w=w, max_len=max_len
         )
 
    
 
-    def forward(self, x: torch.Tensor, start_frame: torch.Tensor | None = None,
+    def forward(self, inp: torch.Tensor, start_frame: torch.Tensor | None = None,
                 teacher_forcing: bool = True) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Args:
@@ -507,13 +529,16 @@ class ST2(nn.Module):
             perplexity: scalar tensor
             used_codes: scalar tensor
         """
+        x = inp[:, :3, :, :, :]   # primeiros 3
+        x_adv  = inp[:, :-3, :, :, :]  # últimos 3
+      
         B, C, T, H, W = x.shape
         device = x.device
 
         # encoder: project frames -> (B, T, D)
         vid_seq = x.permute(0, 2, 1, 3, 4).reshape(B, T, -1)
         vid_seq = self._video_proj(vid_seq)
-        vid_seq = vid_seq + self._pos_t(T).unsqueeze(0).to(device)
+        vid_seq = vid_seq + self._pos_t(T).to(vid_seq.device)
         memory_seq = self._encoder(vid_seq)  # (B, T, D)
 
         # pooling via learned tokens
@@ -531,15 +556,82 @@ class ST2(nn.Module):
             recon = self._decoder(z_q, T, start_frame=start_frame, teacher_forcing_frames=None)
 
         return recon, vq_loss,indices, perplexity, used_codes
+    
+    def forward_autoregressive(
+        self,
+        inp: torch.Tensor,
+        start_frame: torch.Tensor | None = None,
+       
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Args:
+            inp: (B, C, T, H, W)
+            start_frame: (B, C, H, W) usado para geração quando teacher_forcing=False
+            teacher_forcing: se True, usa GT frames como entrada
 
-    def getFeature(self,x):
+        Returns:
+            recon: (B, C, T, H, W)
+            indices: (B, num_tokens)
+            vq_loss: scalar tensor
+            perplexity: scalar tensor
+            used_codes: scalar tensor
+        """
+        x = inp[:, :3, :, :, :]  # apenas primeiros 3 canais
+        B, C, T_in, H, W = x.shape
+        device = inp.device
+        start_frame=start_frame[:, :3, :, :, :] 
+        # --- Encoder + pooling via tokens ---
+        
+        vid_seq = x.permute(0, 2, 1, 3, 4).reshape(B, T_in, -1)
+        vid_seq = self._video_proj(vid_seq)
+        vid_seq = vid_seq + self._pos_t(T_in).to(vid_seq.device)
+        memory_seq = self._encoder(vid_seq)  # (B, T_in, D)
+
+        q = self._tokens.expand(B, -1, -1)  # (B, num_tokens, D)
+        z_tokens, _ = self._attn(query=q, key=memory_seq, value=memory_seq)  # (B, num_tokens, D)
+
+        z_q, indices, vq_loss, perplexity, used_codes = self._vq(z_tokens)
+
+        # --- Autoregressive generation ---
+        generated_frames = []
+        prev_frame = start_frame  # (B, C, H, W)
+
+        frame_dim = self.out_ch * self._h * self._w
+    
+        for t in range(T_in):
+            # flatten + reshape (B, 1, frame_dim)
+
+            seq_flat = prev_frame.reshape(B, 1, frame_dim)
+
+            # decoder gera 1 frame
+            dec_out = self._decoder(
+                z_tokens=z_q,
+                T=1,
+                start_frame=seq_flat,
+                teacher_forcing_frames=None
+            )
+
+            # dec_out: (B, C, 1, H, W) → squeeze dimensão temporal
+            pred_frame = dec_out[:, :, 0, :, :]
+            generated_frames.append(pred_frame)
+
+            # próximo passo: o frame gerado vira prev_frame
+            prev_frame = pred_frame
+
+        # empilha frames no eixo temporal
+        recon = torch.stack(generated_frames, dim=2)  # (B, C, T, H, W)
+        return recon
+
+    def getFeature(self,inp):
         self.eval()
+        x = inp[:, :3, :, :, :]   # primeiros 3
         B, C, T, H, W = x.shape
         device = x.device
         # encoder: project frames -> (B, T, D)
         vid_seq = x.permute(0, 2, 1, 3, 4).reshape(B, T, -1)
         vid_seq = self._video_proj(vid_seq)
-        vid_seq = vid_seq + self._pos_t(T).unsqueeze(0).to(device)
+
+        vid_seq = vid_seq + self._pos_t(T).to(vid_seq.device)
         memory_seq = self._encoder(vid_seq)  # (B, T, D)
 
         # pooling via learned tokens

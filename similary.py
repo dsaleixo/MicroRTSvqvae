@@ -28,7 +28,7 @@ class SimilaridadeCos:
         for i in range (model._vq.num_embeddings):
             for j in range(i,model._vq.num_embeddings):
 
-                cos = (F.cosine_similarity(model._vq.embedding.weight[i], model._vq.embedding.weight[j], dim=0).item()+1)/2
+                cos = (F.cosine_similarity(model._vq.embedding[i], model._vq.embedding[j], dim=0).item()+1)/2
                 self.tableSimilarity[i][j] = cos
                 self.tableSimilarity[j][i] = cos
           

@@ -86,6 +86,10 @@ def closest_palette_loss(pred_rgb, target_rgb, palette):
     target_rgb: (B, 3, T, H, W)
     palette: (7, 3)
     """
+    #print("sahpe_pred",pred_rgb.shape)
+    #print("target_rgb",target_rgb.shape)
+    target_rgb = target_rgb[:, :3, :, :, :] 
+    pred_rgb = pred_rgb[:, :3, :, :, :] 
     device = pred_rgb.device
 
     B, _, T, H, W = pred_rgb.shape
@@ -128,8 +132,8 @@ def baseline(model, val_loader: DataLoader, device='cuda'):
 
            
             #reconstructions, vq_loss, _ = self(x)
-            reconstructions = torch.zeros_like(x)
-            reconstruction_loss = F.mse_loss(reconstructions, x)
+            reconstructions = torch.zeros_like(x[:, :3, :, :, :])
+            reconstruction_loss = F.mse_loss(reconstructions, x[:, :3, :, :, :] )
             loss_jesus = closest_palette_loss(reconstructions, x,palette)
             total_loss = loss_jesus+reconstruction_loss#+# vq_loss
           
@@ -155,6 +159,7 @@ def quantize_colors(video: torch.Tensor, ) -> torch.Tensor:
     return quantized
 
 def salva(name,out):
+    out = out[:3, :, :, :] 
     video_np = (out.permute(1,2,3,0).detach().cpu().numpy() * 255).astype(np.uint8)
     frames=[]
     for frame in video_np:
@@ -165,8 +170,20 @@ def salva(name,out):
 def gerarVideo(model, name,marchReal):
     model.eval()
     marchReal=marchReal.unsqueeze(0).to(device)
-    print("saida",marchReal.shape)
+  
     out=model(marchReal,1000)[0][0]
+    salva(name+"_Pure",out)
+
+    out2 = quantize_colors(out)
+    salva(name+"_Clean",out2)
+
+
+def gerarVideoautoregressive(model, name,marchReal):
+    model.eval()
+    marchReal=marchReal.unsqueeze(0).to(device)
+    start_frame = marchReal[:, :, :1, :, :]  # (B, C, H, W)
+    out=model.forward_autoregressive(marchReal,start_frame)[0]
+    print("gerarVideoautoregressive",out.shape)
     salva(name+"_Pure",out)
 
     out2 = quantize_colors(out)
@@ -191,7 +208,7 @@ def validation(model, val_loader: DataLoader, device='cuda',):
         x = batch.to(device)
 
         reconstructions, vq_loss, _,_,_ = model(x)
-        reconstruction_loss = F.mse_loss(reconstructions, x)
+        reconstruction_loss = F.mse_loss(reconstructions, x[:, :3, :, :, :] )
         loss_jesus = closest_palette_loss(reconstructions, x,palette)
         total_loss = 20*reconstruction_loss+loss_jesus#+reconstruction_loss# +vq_loss*5
         #total_loss = reconstruction_loss# +loss_jesus
@@ -212,23 +229,24 @@ def testLS(model,datasLS):
     codes =model.getFeature(datasLS.to(device))
 
     n = codes.shape[0]
+ 
     exact = SimilaridadeExata()
     simExact = []
     print("SimExat")
     for i in range(1,n):
         sim = exact.get(codes[0],codes[i])
         simExact.append(float(sim))
-        print(i,simExact[-1])
-    simExact=normalize(simExact)
-    '''
+        #print(i,simExact[-1])
+    #simExact=normalize(simExact)
+    print("exact",simExact)
     cos = SimilaridadeCos(model)
     simCos = []
-    print("SimCos")
+    #print("SimCos")
     for i in range(1,n):
         sim = cos.get(codes[0],codes[i])
         simCos.append(float(sim))
-        print(i,simCos[-1])
-    simCos=normalize(simCos)
+       # print(i,simCos[-1])
+    #simCos=normalize(simCos)
     print("cos",simCos)
     indices = [str(x) for x in range(len(simCos))]
     # Gráfico Cos
@@ -248,9 +266,9 @@ def testLS(model,datasLS):
     plt.xlabel("Rótulo")
     wandb.log({"LStest/Exact": wandb.Image(plt)})
     plt.close()
-    '''
+
   
-  
+
    
 def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: DataLoader,marchReal, device='cuda'):
 
@@ -307,7 +325,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 optimizer.zero_grad()
                 #reconstructions, vq_loss, _ = self(x)
                 reconstructions, vq_loss, _,perplexity, used_codes = model(x)
-                reconstruction_loss = F.mse_loss(reconstructions, x)
+                reconstruction_loss = F.mse_loss(reconstructions, x[:, :3, :, :, :] )
                 loss1_norm = reconstruction_loss / reconstruction_loss.detach().mean()
    
                 loss_jesus = closest_palette_loss(reconstructions, x,palette)
@@ -332,7 +350,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
             wandb.log({
               "rl"   :current_lr    
              })
-
+         
             if bestTrain>loss_jesus_epoch and epoch>20:
                 bestTrain=loss_jesus_epoch
                 torch.save(model.state_dict(), "BestTrainModel.pth")
@@ -350,11 +368,13 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
             else:
                  wandb.log({"Updade":0})
             if nextSalve==epoch:
-                 gerarVideo(model,"Actual",marchReal[0])
-                 model._vq.printCodeBook()
-                 model.comparaEncoderQuant(marchReal[0].unsqueeze(0).to(device))
-                 nextSalve = nextSalve+20
-                 testLS(model,marchReal)
+                gerarVideo(model,"Actual",marchReal[0])
+                model._vq.printCodeBook()
+                model.comparaEncoderQuant(marchReal[0].unsqueeze(0).to(device))
+                nextSalve = nextSalve+20
+                torch.save(model.state_dict(), "actual.pth")
+                wandb.save("actual.pth")
+                testLS(model,marchReal)
 
             print(epoch,total_loss_epoch,totalLossVal,perplexity, used_codes,vq_loss_epoch,current_lr)
             wandb.log({
@@ -394,9 +414,9 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     palette=palette.to(device)
     import os
-   
+
     wandb.init(
-    project="VQVAE",
+    project="VQVAE", mode="disabled",
     name = "castelo infinito2 boa noite arrumano vq",
     config={
          
@@ -406,49 +426,41 @@ if __name__ == "__main__":
         "learning_rate": 0.001
         }
     )
-    '''
-    frames = []
-
-    # Suponha que video_data seja torch tensor (T, C, H, W)
-    video_data = torch.rand(12, 3, 64, 64)
-
-    # Converter para numpy (T, H, W, C)
-    video_np = (video_data.numpy() * 255).astype(np.uint8)
-
-    for frame in video_np:
-        frames.append(frame)
-
-    imageio.mimsave('video.gif', frames, fps=12)
-
-    wandb.log({"meu_video": wandb.Video("video.gif", format="gif")})
-    print(f"Using device: {device}")
-    '''
+  
+    
+    
     sizeVideo =128
     
     datas = ReadDatas.readDatas(sizeVideo,device)
     print("load complete",len(datas) )
     datas = datas
     total_size = len(datas) 
+    print("sss ",datas[0].shape)
     train_size = int(0.8 * total_size)  # 80 amostras para treino
     test_size = total_size - train_size  # 20 amostras para teste
     train_set, val_set = random_split(datas, [train_size, test_size])
 
     train_loader = DataLoader(train_set, batch_size=32)
     val_loader = DataLoader(val_set, batch_size=32, )
- 
-    exemplo = np.load("resultado.npy")[:sizeVideo]
- 
-   
+    
+    
+    exemplo = torch.tensor(np.load("resultado.npy")[:sizeVideo],dtype=torch.float)
+    print("qq",exemplo.shape)
+    exemplo = exemplo.unsqueeze(0)  # (1, 128, 6, 24, 24)
+
+    # reorganiza para o formato de b
+    exemplo = exemplo.permute(0, 2, 1, 3, 4)  # (1, 6, 128, 24, 24
 
 
   
-    marchReal = ReadDatas.readDatasVal(sizeVideo,device)
-
+    marchReal = torch.cat([exemplo, ReadDatas.readDatasVal(sizeVideo,device)], dim=0) 
+    #torch.stack(exemplo)
+    print("qqq",marchReal.shape)
 
     
-    #salva("RealVideo",marchReal[0])
+    salva("RealVideo",marchReal[0])
     
-
+  
     
     model = ST2().to(device)
    # state_dict = torch.load("./Best0.pth")
@@ -457,7 +469,7 @@ if __name__ == "__main__":
     #model.load_state_dict(state_dict)
     testLS(model,marchReal)
     
-    
-    loopTrain(model, 10000, train_loader, val_loader,marchReal, device)
+    gerarVideoautoregressive(model,"BestTestAR",marchReal[0])
+    #loopTrain(model, 10000, train_loader, val_loader,marchReal, device)
 
-    
+  
