@@ -16,7 +16,7 @@ from similary import SimilaridadeCos, SimilaridadeExata
 from simples_transformer import ST
 from st2 import ST2
 from stFirst import STFirst
-from PIL import Image
+from PIL import Image,ImageSequence
 os.environ["WANDB_API_KEY"] = "e6dd69e5ba37b74ef8d3ef0fa9dd28a33e4eeb6e"
 
 
@@ -165,14 +165,24 @@ import imageio
 
 def juntar_gifs_lado_a_lado(gifs: list[str], saida: str = "saida.gif") -> None:
     # Carregar todos os gifs
-    leitores = [imageio.get_reader(g) for g in gifs]
+    
+    def ler_gif_completo(path):
+        gif = Image.open(path)
+        frames = []
+        bg = Image.new("RGBA", gif.size)
+        for frame in ImageSequence.Iterator(gif):
+            bg.paste(frame)
+            frames.append(bg.copy())
+        return frames
+
+    gifs_frames = [ler_gif_completo(g) for g in gifs]
 
     # Número de frames será o mínimo entre os gifs (para evitar erro de comprimento)
-    num_frames = min([len(l) for l in leitores])
+    num_frames = min([len(l) for l in gifs_frames])
     print("num_frames",num_frames)
     frames = []
     for i in range(num_frames):
-        imagens = [Image.fromarray(l.get_data(i)) for l in leitores]  # <-- CORRIGIDO
+        imagens = [Image.fromarray(l.get_data(i)) for l in gifs_frames]  # <-- CORRIGIDO
 
         # Opcional: redimensionar para mesma altura
         alturas = [img.height for img in imagens]
