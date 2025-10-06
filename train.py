@@ -211,8 +211,11 @@ def salva(name,out):
     out = out[:3, :, :, :] 
     video_np = (out.permute(1,2,3,0).detach().cpu().numpy() * 255).astype(np.uint8)
     frames=[]
+    aux =0 
     for frame in video_np:
+        frame[0][24][aux%3]=1
         frames.append(frame)
+        aux+=1
     print(len(frames),frames[0].shape)
     
     same_count = sum(
