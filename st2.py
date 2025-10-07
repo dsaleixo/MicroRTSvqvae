@@ -825,7 +825,7 @@ class ST2(nn.Module):
             # dec_out: (B, C, 1, H, W) → squeeze dimensão temporal
             pred_frame = dec_out[:, :, 0, :, :]
             print("naruto",pred_frame.shape)
-            quant_frame = quantize_colors(pred_frame.unsqueeze(2), palette)  # (B, C, 1, H, W)
+            quant_frame = quantize_colors(pred_frame.unsqueeze(2))  # (B, C, 1, H, W)
             pred_frame = quant_frame[:, :, 0, :, :]  # volta pra (B, C, H, W)
             generated_frames.append(pred_frame)
 
