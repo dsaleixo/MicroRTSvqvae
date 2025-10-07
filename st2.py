@@ -704,7 +704,7 @@ class ST2(nn.Module):
         x_adv  = inp[:, :-3, :, :, :]  # últimos 3
         x_adv = x_adv.permute(0, 2, 1, 3, 4)
         device = x.device
-        B, C, T_in, H, W = x.shape
+        B, C, T, H, W = x.shape
         # encoder: project frames -> (B, T, D)
         vid_seq = x.permute(0, 2, 1, 3, 4).reshape(B, T, -1)
         vid_seq = self._video_proj(vid_seq)
