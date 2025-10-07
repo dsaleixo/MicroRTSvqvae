@@ -28,7 +28,7 @@ import torch
 import torch.nn as nn
 
 
-def quantize_colors(frame: torch.Tensor, palette: torch.Tensor) -> torch.Tensor:
+def quantize_colors(frame: torch.Tensor) -> torch.Tensor:
     """
     Quantiza o frame para as cores mais próximas da paleta.
 
