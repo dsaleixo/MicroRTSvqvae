@@ -701,7 +701,7 @@ class ST2(nn.Module):
             used_codes: scalar tensor
         """
         x = inp[:, :3, :, :, :]   # primeiros 3
-        x_adv  = inp[:, :-3, :, :, :]  # últimos 3
+        x_adv  = inp[:, 3:, :, :, :]  # últimos 3
         x_adv = x_adv.permute(0, 2, 1, 3, 4)
         device = x.device
         B, C, T, H, W = x.shape
@@ -747,7 +747,7 @@ class ST2(nn.Module):
             used_codes: scalar tensor
         """
         x = inp[:, :3, :, :, :]  # apenas primeiros 3 canais
-        x_adv  = inp[:, :-3, :, :, :]  # últimos 3
+        x_adv  = inp[:, 3:, :, :, :]  # últimos 3
         x_adv = x_adv.permute(0, 2, 1, 3, 4)
         B, C, T_in, H, W = x.shape
         device = inp.device
