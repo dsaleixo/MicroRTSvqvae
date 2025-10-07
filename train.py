@@ -211,6 +211,11 @@ def juntar_gifs_lado_a_lado(gifs: list[str], saida: str = "saida.gif") -> None:
         duration=100,  # tempo entre frames em ms
         loop=0
     )
+    from PIL import Image, ImageSequence
+
+    with Image.open("Gifs/"+saida) as im:
+        n = sum(1 for _ in ImageSequence.Iterator(im))
+    print("Frames no GIF salvo:", n)
     wandb.log({saida: wandb.Video("Gifs/"+saida, format="gif")})
 
 def salva(name,out):
@@ -265,7 +270,7 @@ def gerarVideoautoregressive(model, name,marchReal):
 
     out2 = quantize_colors(out)
     print("gerarVideoautoregressive",out2.shape)
-   
+    salva(name+"_Clean",out2)
 
 
 
@@ -436,7 +441,7 @@ def loopTrain(model, max_epochs: int, train_loader: DataLoader, val_loader: Data
                 gerarVideo(model,"BestTrain",marchReal[0])
                 gerarVideoautoregressive(model,"BestTrainAR",marchReal[0])
                 name ="BestTrain"
-                juntar_gifs_lado_a_lado(["Gifs/"+name+"_Real.gif", "Gifs/"+name+"_Pure.gif", "Gifs/"+name+"_Clean.gif"], name+".gif")#, "Gifs/"+name+"AR"+"_Pure.gif", "Gifs/"+name+"AR"+"_Clean.gif"], name+".gif")
+                juntar_gifs_lado_a_lado(["Gifs/"+name+"_Real.gif", "Gifs/"+name+"_Pure.gif", "Gifs/"+name+"_Clean.gif",  "Gifs/"+name+"AR"+"_Pure.gif", "Gifs/"+name+"AR"+"_Clean.gif"], name+".gif")
 
             if bestVal >jesusLossVal and epoch>20:
                 bestVal=jesusLossVal
