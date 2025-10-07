@@ -342,7 +342,7 @@ class VideoEncoderNoSpatial(nn.Module):
             z = torch.clamp(z, -1.0, 1.0)
 
         return z
-
+'''
 # =========================
 # Video Decoder Temporal (autoregressivo, sem convs)
 # =========================
@@ -455,7 +455,83 @@ class VideoDecoderNoSpatial(nn.Module):
         frames = gen_seq.permute(0, 2, 1, 3, 4)  # (B, C, T, H, W)
         return frames
 
+'''
+class VideoDecoderNoSpatial(nn.Module):
+    def __init__(self, d_model: int, nhead: int, num_layers: int,
+                 out_ch: int, h: int, w: int, max_len: int = 10000):
+        super().__init__()
+        dec_layer = nn.TransformerDecoderLayer(d_model=d_model, nhead=nhead, batch_first=True)
+        self._decoder = nn.TransformerDecoder(dec_layer, num_layers=num_layers)
 
+        self._pos_t = SinusoidalPositionalEncoding1D(d_model)
+
+        self._frame_enc = nn.Sequential(
+            nn.Linear(out_ch * h * w, d_model),
+            nn.LayerNorm(d_model),
+        )
+
+        self._to_frame_feat = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model),
+            nn.GELU(),
+        )
+        self._out = nn.Linear(d_model, out_ch * h * w)
+
+        self._out_ch, self._h, self._w = out_ch, h, w
+        self._max_len = max_len
+
+    @staticmethod
+    def _causal_mask(T: int, device: torch.device) -> torch.Tensor:
+        mask = torch.triu(torch.ones(T, T, device=device), diagonal=1)
+        return mask.masked_fill(mask == 1, float('-inf'))
+
+    def forward(
+        self,
+        z_tokens: torch.Tensor,
+        T: int,
+        start_frame: torch.Tensor | None = None,
+        teacher_forcing_frames: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        B, N, D = z_tokens.shape
+        device = z_tokens.device
+        frame_dim = self._out_ch * self._h * self._w
+        z_mem = z_tokens
+
+        if teacher_forcing_frames is not None:
+            assert teacher_forcing_frames.shape[2] >= T
+            prev_frames = torch.zeros(B, T, self._out_ch, self._h, self._w, device=device)
+            prev_frames[:, 0] = teacher_forcing_frames[:, :, 0] if start_frame is None else start_frame
+            if T > 1:
+                prev_frames[:, 1:] = teacher_forcing_frames[:, :, :T-1].permute(0, 2, 1, 3, 4)
+
+            prev_flat = prev_frames.view(B, T, frame_dim)
+            tgt_emb = self._frame_enc(prev_flat) + self._pos_t(T).to(device)
+            tgt_mask = self._causal_mask(T, device)
+            dec = self._decoder(tgt=tgt_emb, memory=z_mem, tgt_mask=tgt_mask)
+            dec = self._to_frame_feat(dec)
+            out = self._out(dec)
+            return out.view(B, T, self._out_ch, self._h, self._w).permute(0, 2, 1, 3, 4)
+
+        assert start_frame is not None
+        generated = []
+        for t in range(T):
+            if t == 0:
+                seq_frames = start_frame.unsqueeze(1)
+            else:
+                seq_frames = torch.cat([start_frame.unsqueeze(1), torch.stack(generated, dim=1)], dim=1)
+
+            L = seq_frames.shape[1]
+            seq_flat = seq_frames.view(B, L, frame_dim)
+            tgt_emb = self._frame_enc(seq_flat) + self._pos_t(L).to(device)
+            tgt_mask = self._causal_mask(L, device)
+            dec = self._decoder(tgt=tgt_emb, memory=z_mem, tgt_mask=tgt_mask)
+            dec = self._to_frame_feat(dec)
+            pred_flat = self._out(dec[:, -1, :])
+            pred_frame = pred_flat.view(B, self._out_ch, self._h, self._w)
+            generated.append(pred_frame)
+
+        gen_seq = torch.stack(generated, dim=1)
+        return gen_seq.permute(0, 2, 1, 3, 4)
 # =========================
 # ST full model (encoder -> vq -> autoregressive decoder)
 # =========================
