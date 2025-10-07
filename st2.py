@@ -27,7 +27,19 @@ import math
 import torch
 import torch.nn as nn
 
-palette = torch.tensor([
+
+def quantize_colors(frame: torch.Tensor, palette: torch.Tensor) -> torch.Tensor:
+    """
+    Quantiza o frame para as cores mais próximas da paleta.
+
+    Args:
+        frame: Tensor (B, 3, H, W)
+        palette: Tensor (K, 3) com valores entre 0–1 ou -1–1
+
+    Returns:
+        frame_quant: Tensor (B, 3, H, W)
+    """
+    palette = torch.tensor([
                 [255,255,255],
                 [200,200,200],
                 [255,100,10],
@@ -35,35 +47,21 @@ palette = torch.tensor([
                 [0, 255, 255],
                 [0,0,0],
                 [127,127,127],
-            ], dtype=torch.float32)
-palette/=255
-def quantize_colors(video: torch.Tensor) -> torch.Tensor:
-    """
-    Quantiza cada pixel do vídeo para a cor mais próxima da paleta.
-
-    Args:
-        video: Tensor (B, C, T, H, W) ou (C, T, H, W)
-        palette: Tensor (K, 3) com as cores da paleta (valores entre 0–1 ou -1–1)
-
-    Returns:
-        Tensor quantizado de mesmo shape do vídeo
-    """
-    if video.dim() == 4:  # sem batch
-        video = video.unsqueeze(0)  # (1, C, T, H, W)
-
-    B, C, T, H, W = video.shape
+            ], dtype=torch.float32, device=frame.device)
+    palette/=255
+    B, C, H, W = frame.shape
     assert C == 3, "Esperado 3 canais RGB"
 
-    # (B, T, H, W, 3)
-    flat = video.permute(0, 2, 3, 4, 1).reshape(-1, 3)  # (N, 3)
-    dists = torch.cdist(flat, palette.to(video.device))  # (N, K)
+    # (B, H, W, 3)
+    flat = frame.permute(0, 2, 3, 1).reshape(-1, 3)  # (B*H*W, 3)
+    dists = torch.cdist(flat, palette.to(frame.device))  # (B*H*W, K)
 
-    indices = torch.argmin(dists, dim=1)  # (N,)
-    quantized_flat = palette[indices]  # (N, 3)
+    indices = torch.argmin(dists, dim=1)  # (B*H*W,)
+    quantized_flat = palette[indices]      # (B*H*W, 3)
 
-    # volta para o formato original
-    quantized = quantized_flat.view(B, T, H, W, 3).permute(0, 4, 1, 2, 3)
-    return quantized
+    # Reconstrói o frame
+    frame_quant = quantized_flat.view(B, H, W, 3).permute(0, 3, 1, 2)
+    return frame_quant
 
 
 
